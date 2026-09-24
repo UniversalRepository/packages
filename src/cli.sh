@@ -15,11 +15,11 @@ message() {
 usage() {
     info "UniversalRepository Packages"
     printf '%s\n' \
-        'Usage: urepo build DISTRO/PACKAGE' \
+        'Usage: urepo build DISTRO/PACKAGE [DISTRO/PACKAGE ...]' \
         '       urepo help' \
         '' \
-        'Build a native package using its distribution backend.' \
-        'Example: urepo build void/foo' \
+        'Build native packages sequentially using their distribution backends.' \
+        'Example: urepo build void/foo void/bar' \
         '' \
         'Set NO_COLOR to disable terminal colors.'
 }
@@ -35,11 +35,12 @@ main() {
             usage
             ;;
         build)
-            [ "$#" -eq 2 ] || {
-                error 'expected: urepo build DISTRO/PACKAGE'
+            [ "$#" -ge 2 ] || {
+                error 'expected: urepo build DISTRO/PACKAGE [DISTRO/PACKAGE ...]'
                 exit 2
             }
-            build "$2"
+            shift
+            build "$@"
             ;;
         *)
             error "unknown command $1, see 'urepo help'"
