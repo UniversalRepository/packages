@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+case $0 in
+    /*) UREPO_ROOT=$0 ;;
+    */*) UREPO_ROOT=./$0 ;;
+    *) UREPO_ROOT=$(command -v "$0") ;;
+esac
+
+UREPO_ROOT=$(CDPATH= cd -P "$(dirname "$UREPO_ROOT")" && pwd -P)
+export UREPO_ROOT
+
+. "$UREPO_ROOT/src/cli.sh"
+. "$UREPO_ROOT/src/distro.sh"
+
+main "$@"
