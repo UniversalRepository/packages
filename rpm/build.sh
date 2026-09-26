@@ -2,7 +2,9 @@ distro_build() {
 	set -eu
 
 	require rpm
+	if [ "$EUID" -ne 0 ]; then
 	require sudo
+	fi
 	require rpmbuild
 	if [ ! -f /etc/os-release ]; then
 		echo "Failed to find os-release file"
@@ -19,7 +21,7 @@ distro_build() {
 			require rpmdev-spectool
 			;;
 		*)
-			error "I think you have unsupported rpm distro by UniversalRepository Cli"; exit 2
+			error "I think you have unsupported rpm distro by UniversalRepository CLI"; exit 2
 			;;
 	esac
 	key=${UREPO_RPM_SIGN_KEY:-$UREPO_ROOT/keys/rpm.key}
@@ -60,16 +62,17 @@ distro_build() {
 			for pkg do
 				info "Prepear $pkg for build"
 				pkg_dir=$srcpkgs_dir/$pkg
+				spec_file=$pkg_dir/$pkg.spec
 				cd $pkg_dir
 				
 				info "Downloading $pkg sources"
 				rpmdev-spectool -g $pkg.spec
 				info "Downloading $pkg BuildRequires"
 				if [ "$EUID" -eq 0 ]; then
-					zypper --non-interactive source-install --build-deps-only "$pkg.spec" || [ $? -eq 104 ]
+					zypper --non-interactive install $(rpmspec -q --buildrequires $spec_file)
 				else
 					warn "This action requires root access!"
-					sudo zypper --non-interactive source-install --build-deps-only "$pkg.spec" || [ $? -eq 104 ]
+					sudo zypper --non-interactive install $(rpmspec -q --buildrequires $spec_file)
 				fi
 				info "Building $pkg"
 				rpmbuild \
