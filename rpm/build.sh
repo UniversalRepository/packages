@@ -1,29 +1,8 @@
 distro_build() {
     set -eu
 
-    require rpm
-    if [ "$EUID" -ne 0 ]; then
-    require sudo
-    fi
-    require rpmbuild
-    if [ ! -f /etc/os-release ]; then
-        echo "Failed to find os-release file"
-        exit 1
-    fi
-    source /etc/os-release
-    case "$ID" in
-        fedora)
-            require dnf
-            require spectools
-            ;;
-        opensuse*|sles|ledet)
-            require zypper
-            require rpmdev-spectool
-            ;;
-        *)
-            error "I think you have unsupported rpm distro by UniversalRepository CLI"; exit 2
-            ;;
-    esac
+    check_depenth
+
     key=${UREPO_RPM_SIGN_KEY:-$UREPO_ROOT/keys/rpm.key}
     [ -r "$key" ] || die "cannot read signing key: $key"
 
@@ -85,4 +64,35 @@ distro_build() {
             done
             ;;
     esac
+}
+
+check_depenth() {
+    require rpm
+	require createrepo_c
+    if [ "$EUID" -ne 0 ]; then
+    require sudo
+    fi
+    require rpmbuild
+    if [ ! -f /etc/os-release ]; then
+        echo "Failed to find os-release file"
+        exit 1
+    fi
+    source /etc/os-release
+    case "$ID" in
+        fedora)
+            require dnf
+            require spectools
+            ;;
+        opensuse*|sles|ledet)
+            require zypper
+            require rpmdev-spectool
+            ;;
+        *)
+            error "I think you have unsupported rpm distro by UniversalRepository CLI"; exit 2
+            ;;
+    esac
+}
+
+
+create_repo() {
 }
