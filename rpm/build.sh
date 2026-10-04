@@ -3,8 +3,9 @@ distro_build() {
 
     check_depenth
 
-    key=${UREPO_RPM_SIGN_KEY:-$UREPO_ROOT/keys/rpm.key}
+    key=${UREPO_GPG_SIGN_KEY:-$UREPO_ROOT/keys/rpm.key}
     [ -r "$key" ] || die "cannot read signing key: $key"
+    sign_name=${UREPO_SIGN_NAME:-UniversalRepository <urepo@example.com>}
     arch=${UREPO_RPM_ARCH:-x86_64}
     work=$UREPO_ROOT/builddir/rpm
     srcpkgs_dir=$UREPO_ROOT/rpm/srcpkgs
@@ -19,7 +20,7 @@ distro_build() {
                 cd $pkg_dir
 
                 info "Downloading $pkg sources"
-                spectools -g $pkg.spec
+                spectool -g $pkg.spec
                 info "Downloading $pkg BuildRequires"
                 if [ "$EUID" -eq 0 ]; then
                     dnf builddep -y $pkg.spec
@@ -83,7 +84,7 @@ check_depenth() {
     case "$ID" in
         fedora)
             require dnf
-            require spectools
+            require spectool
             ;;
         opensuse*|sles|ledet)
             require zypper
@@ -99,12 +100,18 @@ check_depenth() {
 create_repo() {
     local REPO_DIR=$work/$arch
     local TMP_GPG=$work/gpg
+    local RPM_FILES=($REPO_DIR/*.rpm)
 
     if [ ! -d $TMP_GPG ]; then
     mkdir -p $TMP_GPG
     gpg --homedir $TMP_GPG --import $key
     fi
     mkdir -p $REPO_DIR
+
+    for rpm_file in ${RPM_FILES[@]}; do
+    info "Signing $rpm_file"
+    rpm --define "%_gpg_name ${sign_name}" --define "%_gpg_path ${TMP_GPG}" --addsign $rpm_file
+    done
 
     createrepo_c $REPO_DIR
     gpg --homedir $TMP_GPG --batch --yes --detach-sign --armor $REPO_DIR/repodata/repomd.xml
