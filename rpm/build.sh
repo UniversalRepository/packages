@@ -5,7 +5,7 @@ distro_build() {
 
     key=${UREPO_RPM_SIGN_KEY:-$UREPO_ROOT/keys/rpm.key}
     [ -r "$key" ] || die "cannot read signing key: $key"
-
+    arch=${UREPO_RPM_ARCH:-x86_64}
     work=$UREPO_ROOT/builddir/rpm
     srcpkgs_dir=$UREPO_ROOT/rpm/srcpkgs
 
@@ -64,11 +64,13 @@ distro_build() {
             done
             ;;
     esac
+    create_repo
 }
 
 check_depenth() {
     require rpm
 	require createrepo_c
+    require gpg
     if [ "$EUID" -ne 0 ]; then
     require sudo
     fi
@@ -95,4 +97,17 @@ check_depenth() {
 
 
 create_repo() {
+    local REPO_DIR=$work/$arch
+    local TMP_GPG=$work/gpg
+
+    if [ ! -d $TMP_GPG ]; then
+    mkdir -p $TMP_GPG
+    gpg --homedir $TMP_GPG --import $key
+    fi
+    mkdir -p $REPO_DIR
+
+    createrepo_c $REPO_DIR
+    gpg --homedir $TMP_GPG --batch --yes --detach-sign --armor $REPO_DIR/repodata/repomd.xml
+    gpg --homedir $TMP_GPG --armor --export > $REPO_DIR/repodata/repomd.xml.key
 }
+
