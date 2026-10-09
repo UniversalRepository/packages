@@ -20,7 +20,7 @@ distro_build() {
                 cd $pkg_dir
 
                 info "Downloading $pkg sources"
-                spectool -g $pkg.spec
+                spectool -g -C $work/SOURCES $pkg.spec
                 info "Downloading $pkg BuildRequires"
                 if [ "$EUID" -eq 0 ]; then
                     dnf builddep -y $pkg.spec
@@ -31,7 +31,7 @@ distro_build() {
                 info "Building $pkg"
                 rpmbuild \
                 --define "_topdir $work" \
-                --define "_sourcedir $pkg_dir" \
+                --define "_sourcedir $work/SOURCES" \
                 --define "_specdir $pkg_dir" \
                 --define "_srcrpmdir $work"\
                 --define "_rpmdir $work" \
@@ -46,7 +46,7 @@ distro_build() {
                 cd $pkg_dir
 
                 info "Downloading $pkg sources"
-                rpmdev-spectool -g $pkg.spec
+                rpmdev-spectool -g -C $work/SOURCES $pkg.spec
                 info "Downloading $pkg BuildRequires"
                 if [ "$EUID" -eq 0 ]; then
                     zypper --non-interactive install $(rpmspec -q --buildrequires $spec_file)
@@ -57,7 +57,7 @@ distro_build() {
                 info "Building $pkg"
                 rpmbuild \
                 --define "_topdir $work" \
-                --define "_sourcedir $pkg_dir" \
+                --define "_sourcedir $work/SOURCES" \
                 --define "_specdir $pkg_dir" \
                 --define "_srcrpmdir $work"\
                 --define "_rpmdir $work" \
