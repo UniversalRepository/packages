@@ -34,7 +34,7 @@ distro_build() {
                 --define "_sourcedir $work/SOURCES" \
                 --define "_specdir $pkg_dir" \
                 --define "_srcrpmdir $work"\
-                --define "_rpmdir $work" \
+                --define "_rpmdir $work/FEDORA" \
                     -ba "$pkg.spec"
             done
             ;;
@@ -60,7 +60,7 @@ distro_build() {
                 --define "_sourcedir $work/SOURCES" \
                 --define "_specdir $pkg_dir" \
                 --define "_srcrpmdir $work"\
-                --define "_rpmdir $work" \
+                --define "_rpmdir $work/SUSE" \
                     -ba "$pkg.spec"
             done
             ;;
