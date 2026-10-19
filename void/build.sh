@@ -1,5 +1,6 @@
 distro_build() {
-    set -eu
+    local key recipes work tree TMPDIR pkg
+    local -a xbps_args=()
 
     require git
     require xbps-rindex
@@ -34,9 +35,8 @@ distro_build() {
         info "Building $pkg"
         (
             cd "$tree"
-            set -f
-            set -- ${UREPO_VOID_XBPS_ARGS:-} -m "$work/masterdir" -H "$work/hostdir" pkg "$pkg"
-            ./xbps-src "$@"
+            read -r -a xbps_args <<< "${UREPO_VOID_XBPS_ARGS:-}"
+            ./xbps-src "${xbps_args[@]}" -m "$work/masterdir" -H "$work/hostdir" pkg "$pkg"
         )
         info "Successfully built $pkg"
     done
@@ -60,6 +60,7 @@ void_checkout() {
 }
 
 void_overlay() {
+    local item name
     for item in "$1"/* "$1"/.[!.]* "$1"/..?*; do
         [ -e "$item" ] || [ -L "$item" ] || continue
         name=${item##*/}
@@ -90,7 +91,7 @@ void_shlibs() {
 }
 
 void_sign() {
-    repo=$1
+    local repo=$1 index arch pkg dir
     set -- "$repo"/*.xbps
     if [ -f "$1" ]; then
         for index in "$repo"/*-repodata; do
