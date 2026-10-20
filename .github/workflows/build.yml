@@ -102,8 +102,8 @@ jobs:
           [ -s .list ] || exit 0
           mkdir -p "$REPO_DIR"
           rsync -rtL "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/" "$REPO_DIR/"
-          chown -R builder:builder "$REPO_DIR"
-
+          chown -R builder:builder builddir
+          
       - name: Build packages
         run: |
           set -euo pipefail
