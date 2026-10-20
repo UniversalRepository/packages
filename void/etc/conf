@@ -1,1 +1,1 @@
-XBPS_CHROOT_CMD=bwrap
+XBPS_CHROOT_CMD=uchroot
