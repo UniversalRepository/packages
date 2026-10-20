@@ -1,0 +1,59 @@
+name: Publish builder image
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - Containerfile
+      - .github/workflows/container.yml
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: container-master
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and publish
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+          REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ github.sha }}
+          BUILDER: ${{ steps.buildx.outputs.name }}
+        run: |
+          set -euo pipefail
+
+          image=ghcr.io/universalrepository/builder
+
+          cp .containerignore .dockerignore
+          trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+
+          printf '%s' "$GHCR_TOKEN" |
+            docker login ghcr.io --username "$GHCR_USER" --password-stdin
+
+          docker buildx build \
+            --builder "$BUILDER" \
+            --file Containerfile \
+            --platform linux/amd64 \
+            --tag "$image:latest" \
+            --tag "$image:sha-$REVISION" \
+            --label "org.opencontainers.image.source=https://github.com/$REPOSITORY" \
+            --label "org.opencontainers.image.revision=$REVISION" \
+            --cache-from "type=registry,ref=$image:buildcache" \
+            --cache-to "type=registry,ref=$image:buildcache,mode=max" \
+            --push .
