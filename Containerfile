@@ -51,6 +51,9 @@ RUN <<'BUILD_USER'
 groupadd --gid "$BUILDER_GID" builder
 groupadd --system xbuilder
 useradd --uid "$BUILDER_UID" --gid builder --groups mock,xbuilder --create-home --shell /bin/bash builder
+uchroot=$(readlink -f "$(command -v xbps-uchroot)")
+chown root:xbuilder "$uchroot"
+chmod 4750 "$uchroot"
 install -d -o builder -g builder /workspace
 echo 'builder ALL=(root) NOPASSWD: ALL' > /etc/sudoers.d/builder
 chmod 0440 /etc/sudoers.d/builder
@@ -62,7 +65,7 @@ USER builder
 WORKDIR /workspace
 
 RUN <<'CHECK'
-for tool in bash git bwrap python3 black ruff flake8 sudo rsync ssh xbps-install xbps-query xbps-fetch xbps-rindex xbps-uunshare pacman pacman-key pacstrap arch-chroot makepkg repo-add mock rpmbuild rpmsign createrepo_c apk debootstrap; do
+for tool in bash git bwrap python3 black ruff flake8 sudo rsync ssh xbps-install xbps-query xbps-fetch xbps-rindex xbps-uchroot xbps-uunshare pacman pacman-key pacstrap arch-chroot makepkg repo-add mock rpmbuild rpmsign createrepo_c apk debootstrap; do
     printf 'testing for %s... ' "$tool"
     command -v "$tool" >/dev/null || { printf 'not found\n'; exit 1; }
     printf 'OK\n'

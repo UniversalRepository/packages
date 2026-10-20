@@ -66,13 +66,15 @@ jobs:
           [ -s .list ] || exit 0
           case "$DISTRO" in
             void)
-              runuser -u builder -- bwrap \
-                --bind / / --dev /dev --proc /proc --ro-bind /sys /sys \
-                /bin/true
+              checkdir=$(mktemp -d)
+              trap 'rm -rf "$checkdir"' EXIT
+              mkdir -p "$checkdir"/{proc,sys,dev}
+              install -m 755 "$(command -v xbps-uhelper)" "$checkdir/xbps-uhelper"
+              chown builder:builder "$checkdir"
+              runuser -u builder -- xbps-uchroot "$checkdir" /xbps-uhelper -V
               ;;
             arch)
-              runuser -u builder -- sudo -n unshare \
-                --mount --propagation private /bin/true
+              runuser -u builder -- sudo -n unshare --mount --propagation private /bin/true
               ;;
           esac
 
