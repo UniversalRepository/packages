@@ -60,6 +60,22 @@ jobs:
           done
           cat .list
 
+      - name: Check build environment
+        run: |
+          set -eu
+          [ -s .list ] || exit 0
+          case "$DISTRO" in
+            void)
+              runuser -u builder -- bwrap \
+                --bind / / --dev /dev --proc /proc --ro-bind /sys /sys \
+                /bin/true
+              ;;
+            arch)
+              runuser -u builder -- sudo -n unshare \
+                --mount --propagation private /bin/true
+              ;;
+          esac
+
       - name: Setup signing key
         env:
           KEY: ${{ secrets[matrix.key] }}
@@ -103,7 +119,7 @@ jobs:
           mkdir -p "$REPO_DIR"
           rsync -rtL "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/" "$REPO_DIR/"
           chown -R builder:builder builddir
-          
+
       - name: Build packages
         run: |
           set -euo pipefail
@@ -128,8 +144,7 @@ jobs:
           for pattern in "${patterns[@]}"; do
             filters+=("--exclude=$pattern")
           done
-          rsync -rtL --delay-updates "${filters[@]}" \
-            "$REPO_DIR/" "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/"
+          rsync -rtLv "${filters[@]}" "$REPO_DIR/" "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/"
 
       - name: Upload metadata
         run: |
@@ -140,8 +155,20 @@ jobs:
           for pattern in "${patterns[@]}"; do
             filters+=("--include=$pattern")
           done
-          rsync -rtL --delay-updates "${filters[@]}" --exclude='*' \
-            "$REPO_DIR/" "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/"
+          rsync -rtLv "${filters[@]}" --exclude='*' "$REPO_DIR/" "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/"
+
+      - name: Verify uploaded repository
+        run: |
+          set -eu
+          [ -s .list ] || exit 0
+          rsync -rcnL --out-format='%n' \
+            "$REPO_DIR/" "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/" \
+            > .upload-check
+          if [ -s .upload-check ]; then
+            printf '%s\n' 'error: uploaded repository differs from local files'
+            cat .upload-check
+            exit 1
+          fi
 
       - name: Upload build log
         if: always()

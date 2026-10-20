@@ -1,0 +1,1 @@
+XBPS_CHROOT_CMD=bwrap
