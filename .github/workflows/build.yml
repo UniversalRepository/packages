@@ -1,0 +1,159 @@
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+env:
+  SIGNED_BY: UniversalRepository
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: void
+            pkgs: void/srcpkgs
+            template: template
+            repo: builddir/void/hostdir/binpkgs
+            key: UREPO_KEY_RSA
+            metadata: "*-repodata"
+          - distro: arch
+            pkgs: arch/pkgs
+            template: PKGBUILD
+            repo: builddir/arch/x86_64
+            key: UREPO_GPG_KEY
+            metadata: "universalrepository.db* universalrepository.files*"
+    container:
+      image: ghcr.io/universalrepository/builder:latest
+      options: --privileged --user 0
+    defaults:
+      run:
+        shell: bash
+    env:
+      DISTRO: ${{ matrix.distro }}
+      PKGS_DIR: ${{ matrix.pkgs }}
+      TEMPLATE: ${{ matrix.template }}
+      REPO_DIR: ${{ matrix.repo }}
+      SIGN_KEY: /tmp/urepo-signing/key
+      SF_USER: ${{ vars.UREPO_SOURCEFORGE_USER }}
+      SF_BASE: ${{ vars.UREPO_SOURCEFORGE_PATH }}
+      METADATA: ${{ matrix.metadata }}
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Find packages to build
+        run: |
+          set -eu
+          : > .list
+          for pkg in "$PKGS_DIR"/*; do
+            [ -f "$pkg/$TEMPLATE" ] || continue
+            printf '%s/%s\n' "$DISTRO" "${pkg##*/}" >> .list
+          done
+          cat .list
+
+      - name: Setup signing key
+        env:
+          KEY: ${{ secrets[matrix.key] }}
+        run: |
+          set -eu
+          [ -s .list ] || exit 0
+          : "${KEY:?missing signing key}"
+          umask 077
+          install -d -m 700 -o builder -g builder "${SIGN_KEY%/*}"
+          printf '%s' "$KEY" | base64 -d > "$SIGN_KEY"
+          chown builder:builder "$SIGN_KEY"
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+
+      - name: Setup upload target
+        env:
+          SSH_KEY: ${{ secrets.UREPO_SOURCEFORGE_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.UREPO_SOURCEFORGE_KNOWN_HOSTS }}
+        run: |
+          set -eu
+          [ -s .list ] || exit 0
+          : "${SF_USER:?missing SourceForge username}"
+          : "${SF_BASE:?missing SourceForge directory}"
+          : "${SSH_KEY:?missing SourceForge SSH key}"
+          : "${KNOWN_HOSTS:?missing SourceForge host keys}"
+          umask 077
+          mkdir -p /root/.ssh
+          printf '%s\n' "$SSH_KEY" > /root/.ssh/urepo
+          printf '%s\n' "$KNOWN_HOSTS" > /root/.ssh/known_hosts
+          cat > /root/.ssh/config <<'SSH'
+          Host frs.sourceforge.net
+              IdentityFile /root/.ssh/urepo
+              IdentitiesOnly yes
+              BatchMode yes
+              StrictHostKeyChecking yes
+          SSH
+
+      - name: Pull existing packages
+        run: |
+          set -eu
+          [ -s .list ] || exit 0
+          mkdir -p "$REPO_DIR"
+          rsync -rtL "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/" "$REPO_DIR/"
+          chown -R builder:builder "$REPO_DIR"
+
+      - name: Build packages
+        run: |
+          set -euo pipefail
+          [ -s .list ] || exit 0
+          runuser -u builder -- env \
+            UREPO_VOID_SIGN_KEY="$SIGN_KEY" \
+            UREPO_GPG_SIGN_KEY="$SIGN_KEY" \
+            UREPO_VOID_SIGNED_BY="$SIGNED_BY" \
+            UREPO_VOID_XBPS_ARGS="$EXTRA_ARGS" \
+            bash -euo pipefail -c '
+              cd "$1"
+              mapfile -t packages < .list
+              ./urepo build "${packages[@]}"
+            ' bash "$GITHUB_WORKSPACE" 2>&1 | tee build.log
+
+      - name: Upload built packages
+        run: |
+          set -euo pipefail
+          [ -s .list ] || exit 0
+          read -r -a patterns <<< "$METADATA"
+          filters=()
+          for pattern in "${patterns[@]}"; do
+            filters+=("--exclude=$pattern")
+          done
+          rsync -rtL --delay-updates "${filters[@]}" \
+            "$REPO_DIR/" "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/"
+
+      - name: Upload metadata
+        run: |
+          set -euo pipefail
+          [ -s .list ] || exit 0
+          read -r -a patterns <<< "$METADATA"
+          filters=(--include='*/')
+          for pattern in "${patterns[@]}"; do
+            filters+=("--include=$pattern")
+          done
+          rsync -rtL --delay-updates "${filters[@]}" --exclude='*' \
+            "$REPO_DIR/" "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/"
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-${{ matrix.distro }}-x86_64
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Remove keys
+        if: always()
+        run: |
+          rm -rf "${SIGN_KEY%/*}" "builddir/$DISTRO/gpg"
+          rm -f /root/.ssh/urepo
