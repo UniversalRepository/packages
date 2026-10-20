@@ -1,6 +1,14 @@
 distro_build() {
     local key recipes work tree TMPDIR pkg
     local -a xbps_args=()
+    local target
+    local -a package_names=()
+
+    for target in "$@"; do
+        [[ $target == void/* ]] || die "invalid void target: $target"
+        package_names+=("${target#*/}")
+    done
+    set -- "${package_names[@]}"
 
     require git
     require xbps-rindex
