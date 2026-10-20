@@ -1,0 +1,19 @@
+# Template file for 'logbookd'
+pkgname=logbookd
+version=0.2.6
+revision=1
+build_style=meson
+hostmakedepends="cmake scdoc pkg-config"
+makedepends="libuuid-devel sqlite-devel util-linux-common"
+short_desc="SQlite backed syslogd implementation"
+maintainer="Haris <plavpxl@proton.me>"
+license="MIT"
+homepage="https://git.sr.ht/~martijnbraam/logbookd"
+distfiles="${homepage}/archive/${version}.tar.gz"
+checksum=a92fad562e818968b7cf2a9f2979bbec15cab969d65e5db060ec0924ba5bdaa4
+
+post_install() {
+	vsv logbookd
+	vlicense LICENSE
+}
+

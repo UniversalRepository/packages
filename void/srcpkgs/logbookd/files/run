@@ -1,0 +1,6 @@
+#!/bin/sh
+
+[ -r ./conf ] && . ./conf
+
+exec 2>&1
+exec logbookd -f ${OPTS:--r -g 8192 -d /var/log/logbookd.db}
