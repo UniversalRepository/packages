@@ -112,7 +112,7 @@ jobs:
             UREPO_VOID_SIGN_KEY="$SIGN_KEY" \
             UREPO_GPG_SIGN_KEY="$SIGN_KEY" \
             UREPO_VOID_SIGNED_BY="$SIGNED_BY" \
-            UREPO_VOID_XBPS_ARGS="$EXTRA_ARGS" \
+            UREPO_VOID_XBPS_ARGS="${EXTRA_ARGS:-}" \
             bash -euo pipefail -c '
               cd "$1"
               mapfile -t packages < .list
