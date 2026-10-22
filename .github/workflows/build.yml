@@ -18,14 +18,12 @@ jobs:
       matrix:
         include:
           - distro: void
-            pkgs: void/srcpkgs
-            template: template
+            arch: x86_64
             repo: builddir/void/hostdir/binpkgs
             key: UREPO_KEY_RSA
             metadata: "*-repodata"
           - distro: arch
-            pkgs: arch/pkgs
-            template: PKGBUILD
+            arch: x86_64
             repo: builddir/arch/x86_64
             key: UREPO_GPG_KEY
             metadata: "universalrepository.db* universalrepository.files*"
@@ -37,8 +35,7 @@ jobs:
         shell: bash
     env:
       DISTRO: ${{ matrix.distro }}
-      PKGS_DIR: ${{ matrix.pkgs }}
-      TEMPLATE: ${{ matrix.template }}
+      ARCH: ${{ matrix.arch }}
       REPO_DIR: ${{ matrix.repo }}
       SIGN_KEY: /tmp/urepo-signing/key
       SF_USER: ${{ vars.UREPO_SOURCEFORGE_USER }}
@@ -50,14 +47,44 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Find packages to build
+      - name: Prepare workspace
+        run: chown -R builder:builder "$GITHUB_WORKSPACE"
+
+      - name: Setup upload target
+        env:
+          SSH_KEY: ${{ secrets.UREPO_SOURCEFORGE_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.UREPO_SOURCEFORGE_KNOWN_HOSTS }}
         run: |
           set -eu
-          : > .list
-          for pkg in "$PKGS_DIR"/*; do
-            [ -f "$pkg/$TEMPLATE" ] || continue
-            printf '%s/%s\n' "$DISTRO" "${pkg##*/}" >> .list
-          done
+          : "${SF_USER:?missing SourceForge username}"
+          : "${SF_BASE:?missing SourceForge directory}"
+          : "${SSH_KEY:?missing SourceForge SSH key}"
+          : "${KNOWN_HOSTS:?missing SourceForge host keys}"
+          umask 077
+          mkdir -p /root/.ssh
+          printf '%s\n' "$SSH_KEY" > /root/.ssh/urepo
+          printf '%s\n' "$KNOWN_HOSTS" > /root/.ssh/known_hosts
+          cat > /root/.ssh/config <<'SSH'
+          Host frs.sourceforge.net
+              IdentityFile /root/.ssh/urepo
+              IdentitiesOnly yes
+              BatchMode yes
+              StrictHostKeyChecking yes
+          SSH
+
+      - name: Pull existing packages
+        run: |
+          set -eu
+          mkdir -p "$REPO_DIR"
+          rsync -rtL "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/" "$REPO_DIR/"
+          chown -R builder:builder builddir
+
+      - name: Find packages to build
+        run: |
+          set -euo pipefail
+          runuser -u builder -- env UREPO_VOID_XBPS_ARGS="${EXTRA_ARGS:-}" \
+            ./.ci/unbuilt.sh "$DISTRO" > .list.pending
+          mv .list.pending .list
           cat .list
 
       - name: Check build environment
@@ -89,38 +116,6 @@ jobs:
           install -d -m 700 -o builder -g builder "${SIGN_KEY%/*}"
           printf '%s' "$KEY" | base64 -d > "$SIGN_KEY"
           chown builder:builder "$SIGN_KEY"
-          chown -R builder:builder "$GITHUB_WORKSPACE"
-
-      - name: Setup upload target
-        env:
-          SSH_KEY: ${{ secrets.UREPO_SOURCEFORGE_SSH_KEY }}
-          KNOWN_HOSTS: ${{ vars.UREPO_SOURCEFORGE_KNOWN_HOSTS }}
-        run: |
-          set -eu
-          [ -s .list ] || exit 0
-          : "${SF_USER:?missing SourceForge username}"
-          : "${SF_BASE:?missing SourceForge directory}"
-          : "${SSH_KEY:?missing SourceForge SSH key}"
-          : "${KNOWN_HOSTS:?missing SourceForge host keys}"
-          umask 077
-          mkdir -p /root/.ssh
-          printf '%s\n' "$SSH_KEY" > /root/.ssh/urepo
-          printf '%s\n' "$KNOWN_HOSTS" > /root/.ssh/known_hosts
-          cat > /root/.ssh/config <<'SSH'
-          Host frs.sourceforge.net
-              IdentityFile /root/.ssh/urepo
-              IdentitiesOnly yes
-              BatchMode yes
-              StrictHostKeyChecking yes
-          SSH
-
-      - name: Pull existing packages
-        run: |
-          set -eu
-          [ -s .list ] || exit 0
-          mkdir -p "$REPO_DIR"
-          rsync -rtL "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/$DISTRO/" "$REPO_DIR/"
-          chown -R builder:builder builddir
 
       - name: Build packages
         run: |
@@ -131,6 +126,8 @@ jobs:
             UREPO_GPG_SIGN_KEY="$SIGN_KEY" \
             UREPO_VOID_SIGNED_BY="$SIGNED_BY" \
             UREPO_VOID_XBPS_ARGS="${EXTRA_ARGS:-}" \
+            XBPS_ARCH="$ARCH" XBPS_TARGET_ARCH="$ARCH" \
+            UREPO_ARCH_ARCH="$ARCH" \
             bash -euo pipefail -c '
               cd "$1"
               mapfile -t packages < .list
@@ -176,7 +173,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: log-${{ matrix.distro }}-x86_64
+          name: log-${{ matrix.distro }}-${{ matrix.arch }}
           path: build.log
           if-no-files-found: ignore
           retention-days: 7
