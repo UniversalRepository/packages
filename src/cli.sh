@@ -15,13 +15,12 @@ message() {
 usage() {
     info "UniversalRepository Packages"
     printf '%s\n' \
-        'Usage: urepo build [-c] DISTRO/PACKAGE [DISTRO/PACKAGE ...]' \
-        '       urepo pkg [-c] DISTRO/PACKAGE [DISTRO/PACKAGE ...]' \
+        'Usage: urepo build DISTRO/PACKAGE [DISTRO/PACKAGE ...]' \
+        '       urepo pkg DISTRO/PACKAGE [DISTRO/PACKAGE ...]' \
         '       urepo help' \
         '' \
         'Build native packages sequentially using their distribution backends.' \
         'Example: urepo build void/foo void/bar' \
-        'Use -c/--container to build with local Podman or Docker.' \
         '' \
         'Set NO_COLOR to disable terminal colors.'
 }
@@ -38,25 +37,12 @@ main() {
             ;;
         build|pkg)
             shift
-            local container=0
-            while (( $# )); do
-                case $1 in
-                    -c|--container) container=1; shift ;;
-                    --) shift; break ;;
-                    -*) error "unknown build option: $1"; exit 2 ;;
-                    *) break ;;
-                esac
-            done
+            [ "${1:-}" != -- ] || shift
             [ "$#" -ge 1 ] || {
-                error 'expected: urepo build [-c] DISTRO/PACKAGE [DISTRO/PACKAGE ...]'
+                error 'expected: urepo build DISTRO/PACKAGE [DISTRO/PACKAGE ...]'
                 exit 2
             }
-            if (( container )); then
-                source "$UREPO_ROOT/src/container.sh"
-                container_build "$@"
-            else
-                build "$@"
-            fi
+            build "$@"
             ;;
         *)
             error "unknown command $1, see 'urepo help'"
