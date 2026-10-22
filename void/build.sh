@@ -25,8 +25,43 @@ distro_build() {
     tree=$work/void-packages
     TMPDIR=$work/tmp
     export TMPDIR
-    mkdir -p "$TMPDIR" "$work/hostdir"
+    mkdir -p "$TMPDIR" "$work/hostdir/binpkgs"
 
+    void_prepare "$recipes" "$work" "$tree" "$TMPDIR"
+
+    # Trust keys from the existing local repository before xbps-src syncs it.
+    # The workflow obtains this repository over authenticated SSH.
+    require xbps-install
+    mkdir -p "$work/masterdir"
+    local index
+    while IFS= read -r -d '' index; do
+        xbps-install -r "$work/masterdir" -i -R "${index%/*}" -Sy
+    done < <(find "$work/hostdir/binpkgs" -type f -name '*-repodata' -print0)
+
+    read -r -a xbps_args <<< "${UREPO_VOID_XBPS_ARGS:-}"
+    if [ ! -s "$work/masterdir/.xbps_chroot_init" ]; then
+        info 'Bootstrapping Void build root'
+        (cd "$tree" && ./xbps-src "${xbps_args[@]}" -m "$work/masterdir" -H "$work/hostdir" binary-bootstrap)
+    fi
+
+    for pkg do
+        info "Building $pkg"
+        (
+            cd "$tree"
+            ./xbps-src "${xbps_args[@]}" -m "$work/masterdir" -H "$work/hostdir" pkg "$pkg"
+        )
+        info "Successfully built $pkg"
+    done
+
+    info 'Indexing and signing packages'
+    void_sign "$work/hostdir/binpkgs"
+    info "Repository: $work/hostdir/binpkgs"
+}
+
+# Shared by the build backend and CI metadata inspection. No bootstrap required.
+void_prepare() {
+    local recipes=$1 work=$2 tree=$3 TMPDIR=$4
+    mkdir -p "$TMPDIR" "$work/hostdir/binpkgs"
     info 'Preparing Void sources'
     void_checkout "$tree"
     void_overlay "$recipes/srcpkgs" "$tree/srcpkgs"
@@ -38,20 +73,6 @@ distro_build() {
     if [ -d "$recipes/etc" ]; then
         cp -RP "$recipes/etc/." "$tree/etc/"
     fi
-
-    for pkg do
-        info "Building $pkg"
-        (
-            cd "$tree"
-            read -r -a xbps_args <<< "${UREPO_VOID_XBPS_ARGS:-}"
-            ./xbps-src "${xbps_args[@]}" -m "$work/masterdir" -H "$work/hostdir" pkg "$pkg"
-        )
-        info "Successfully built $pkg"
-    done
-
-    info 'Indexing and signing packages'
-    void_sign "$work/hostdir/binpkgs"
-    info "Repository: $work/hostdir/binpkgs"
 }
 
 void_checkout() {

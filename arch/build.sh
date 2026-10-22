@@ -89,7 +89,7 @@ for pkg in "$@"; do
         mkdir -p "$PKGDEST"
         makepkg --syncdeps --cleanbuild --clean --noconfirm
     ' bash "$pkg"
-    find "$root/build/$pkg/packages" -maxdepth 1 -type f -name '*.pkg.tar.*' -exec cp -t "$work/x86_64" -- {} +
+    find "$root/build/$pkg/packages" -maxdepth 1 -type f -name '*.pkg.tar.*' ! -name '*.sig' -exec cp -t "$work/x86_64" -- {} +
 done
 chown -R "$builder_uid:$builder_gid" "$work/x86_64"
 BUILD
