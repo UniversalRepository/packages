@@ -29,13 +29,11 @@ distro_build() {
 
     void_prepare "$recipes" "$work" "$tree" "$TMPDIR"
 
-    # Trust keys from the existing local repository before xbps-src syncs it.
-    # The workflow obtains this repository over authenticated SSH.
     require xbps-install
     mkdir -p "$work/masterdir"
     local index
     while IFS= read -r -d '' index; do
-        xbps-install -r "$work/masterdir" -i -R "${index%/*}" -Sy
+        printf 'y\n' | xbps-install -r "$work/masterdir" -i -R "${index%/*}" -Sy
     done < <(find "$work/hostdir/binpkgs" -type f -name '*-repodata' -print0)
 
     read -r -a xbps_args <<< "${UREPO_VOID_XBPS_ARGS:-}"
@@ -58,7 +56,6 @@ distro_build() {
     info "Repository: $work/hostdir/binpkgs"
 }
 
-# Shared by the build backend and CI metadata inspection. No bootstrap required.
 void_prepare() {
     local recipes=$1 work=$2 tree=$3 TMPDIR=$4
     mkdir -p "$TMPDIR" "$work/hostdir/binpkgs"
