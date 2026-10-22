@@ -1,8 +1,8 @@
 
 _pkgname=noctalia-greeter
-_tagver=1.6.0
+_tagver=1.7.0
 pkgname=noctalia-greeter
-pkgver=1.6.0
+pkgver=1.7.0
 pkgrel=1
 pkgdesc='Minimal greetd login greeter with a bundled wlroots compositor'
 arch=('x86_64' 'aarch64')
@@ -11,14 +11,18 @@ license=('MIT')
 options=('!debug')
 install=noctalia-greeter.install
 depends=(
+  'bash'
   'cairo'
   'dbus'
   'fontconfig'
   'freetype2'
+  'gcc-libs'
   'glib2'
   'glibc'
   'greetd'
   'libglvnd'
+  'libinput'
+  'libjxl'
   'librsvg'
   'libwebp'
   'libxkbcommon'
@@ -36,19 +40,31 @@ makedepends=(
   'stb'
   'wayland-protocols'
 )
+checkdepends=('mesa')
 optdepends=(
   'noctalia: Wallpaper and palette sync from Noctalia'
+  'polkit: Authorize appearance sync from Noctalia'
+  'xorg-xinit: Start X11 sessions'
 )
 provides=('noctalia-greeter')
 conflicts=('noctalia-greeter-git' 'noctalia-greeter-bin')
-source=("${_pkgname}-${_tagver}.tar.gz::${url}/archive/refs/tags/v${_tagver}.tar.gz")
-sha256sums=('f23ebf07cbe4508971c08b0b81d2b5bfc4ec1ec45605d8f8fb01b799743a70b6')
+source=(
+  "${_pkgname}-${_tagver}.tar.gz::${url}/archive/refs/tags/v${_tagver}.tar.gz"
+)
+sha256sums=(
+  '5b092784c0147bb6739efc2e8146d2d07e3572a59d7a370e93092f9f56d4fcc8'
+)
 
 build() {
   CXXFLAGS+=" -Wno-unused-result"
   arch-meson "${_pkgname}-${_tagver}" build-release \
+    --buildtype=plain \
     -Db_ndebug=true
   meson compile -C build-release
+}
+
+check() {
+  meson test -C build-release --print-errorlogs
 }
 
 package() {
