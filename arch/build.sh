@@ -56,6 +56,17 @@ mkdir -p "$root"
 mount --bind "$root" "$root"
 trap 'umount -R "$root"' EXIT
 
+arch_chroot() {
+    arch-chroot "$root" unshare --mount --propagation private \
+        /bin/bash -euo pipefail -c '
+            read -r proc_pid _ < /proc/self/stat
+            if [[ $proc_pid != "$BASHPID" ]]; then
+                mount -t proc -o nosuid,noexec,nodev proc /proc
+            fi
+            exec "$@"
+        ' arch-chroot "$@"
+}
+
 pacman-key --init
 pacman-key --populate archlinux
 if [[ ! -f $root/.urepo-bootstrap ]]; then
@@ -63,9 +74,9 @@ if [[ ! -f $root/.urepo-bootstrap ]]; then
     touch "$root/.urepo-bootstrap"
 fi
 install -m 644 "$work/pacman.conf" "$root/etc/pacman.conf"
-arch-chroot "$root" pacman -Syu --needed --noconfirm base base-devel archlinux-keyring meson sudo rsync
+arch_chroot pacman -Syu --needed --noconfirm base base-devel archlinux-keyring meson sudo rsync
 
-arch-chroot "$root" /bin/bash -euo pipefail -s -- "$builder_uid" "$builder_gid" <<'USER'
+arch_chroot /bin/bash -euo pipefail -s -- "$builder_uid" "$builder_gid" <<'USER'
 if ! getent group "$2" >/dev/null; then
     groupadd --gid "$2" builder
 fi
@@ -82,7 +93,7 @@ for pkg in "$@"; do
     mkdir -p "$root/build/$pkg"
     rsync -aL --delete --exclude=.git "$recipes/$pkg/" "$root/build/$pkg/"
     chown -R "$builder_uid:$builder_gid" "$root/build"
-    arch-chroot "$root" runuser -u builder -- /bin/bash -euo pipefail -c '
+    arch_chroot runuser -u builder -- /bin/bash -euo pipefail -c '
         cd "/build/$1"
         export HOME=/home/builder
         export PKGDEST="$PWD/packages"
