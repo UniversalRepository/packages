@@ -48,9 +48,9 @@ ARG BUILDER_UID=1000
 ARG BUILDER_GID=1000
 
 RUN <<'BUILD_USER'
-groupadd --gid "$BUILDER_GID" builder
+groupadd --non-unique --gid "$BUILDER_GID" builder
 groupadd --system xbuilder
-useradd --uid "$BUILDER_UID" --gid builder --groups mock,xbuilder --create-home --shell /bin/bash builder
+useradd --non-unique --uid "$BUILDER_UID" --gid builder --groups mock,xbuilder --create-home --shell /bin/bash builder
 uchroot=$(readlink -f "$(command -v xbps-uchroot)")
 chown root:xbuilder "$uchroot"
 chmod 4750 "$uchroot"

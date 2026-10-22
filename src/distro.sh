@@ -1,8 +1,5 @@
-build() {
+validate_targets() {
     local target distro pkg part
-    local -a distros=() targets=()
-    local -A seen=()
-
     for target in "$@"; do
         [[ $target == */* ]] || {
             error 'expected target: DISTRO/PACKAGE'
@@ -23,6 +20,17 @@ build() {
 
         [[ -d $UREPO_ROOT/$distro ]] || die "unknown distribution: $distro"
         [[ -r $UREPO_ROOT/$distro/build.sh ]] || die "missing backend: $distro/build.sh"
+    done
+}
+
+build() {
+    local target distro
+    local -a distros=() targets=()
+    local -A seen=()
+
+    validate_targets "$@"
+    for target in "$@"; do
+        distro=${target%%/*}
 
         if [[ ! ${seen[$distro]+present} ]]; then
             distros+=("$distro")
