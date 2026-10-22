@@ -8,13 +8,14 @@ ci_config() {
 ci_prepare() {
     require makepkg
     require pacman
+    mkdir -p "$scratch/pacman"
 }
 
 ci_available() {
     local archive identity arch
     for archive in "$REPO_DIR"/*.pkg.tar.*; do
         [[ -f $archive && $archive != *.sig ]] || continue
-        identity=$(pacman -Qp -- "$archive") || die "cannot read package: $archive"
+        identity=$(pacman --dbpath "$scratch/pacman" -Qp -- "$archive") || die "cannot read package: $archive"
         arch=${archive##*-}
         arch=${arch%%.pkg.tar.*}
         printf '%s %s\n' "$identity" "$arch"
