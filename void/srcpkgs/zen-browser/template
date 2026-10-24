@@ -1,0 +1,188 @@
+# Template file for 'zen-browser'
+pkgname=zen-browser
+version=1.23.3b
+revision=1
+create_wrksrc=yes
+_llvmver=23
+archs="x86_64* aarch64*"
+build_helper="rust"
+
+build_options="lto pgo debug"
+desc_option_lto="Enable Link Time Optimization"
+desc_option_pgo="Enable Profile-guided Optimization"
+
+hostmakedepends="unzip zip pkg-config perl python3 glib-devel
+ yasm nasm rust cargo llvm${_llvmver} clang${_llvmver} lld${_llvmver} libclang${_llvmver}
+ nodejs cbindgen which tar xz wasi-sdk
+ $(vopt_if pgo 'xvfb-run xorg-fonts dbus mesa-dri vulkan-loader pciutils')"
+makedepends="nss-devel libjpeg-turbo-devel gtk+3-devel
+ pixman-devel libevent-devel libnotify-devel libwebp-devel
+ libXrender-devel libXcomposite-devel libSM-devel libXt-devel rust-std
+ libXdamage-devel freetype-devel wasi-sdk alsa-lib-devel dbus-glib-devel
+ pulseaudio-devel libXScrnSaver-devel sndio-devel jack-devel"
+depends="nss>=3.122.1 nspr>=4.32 desktop-file-utils hicolor-icon-theme pciutils"
+short_desc="Privacy-focused web browser based on Firefox"
+maintainer="Haris <plavpxl@proton.me>"
+license="GPL-3.0-only AND LGPL-2.1-only AND LGPL-3.0-only AND MPL-2.0"
+homepage="https://zen-browser.app/"
+changelog="https://github.com/zen-browser/desktop/releases/tag/${version}"
+distfiles="https://github.com/zen-browser/desktop/releases/download/${version}/zen.source.tar.zst"
+checksum=71c938da6baa0ed15892933f2e7964ad777279cfcbd4e29c3b4b22efe17e8aeb
+
+post_patch() {
+	sed -i 's/\("files":{\)[^}]*/\1/' third_party/rust/audio_thread_priority/.cargo-checksum.json
+
+	if [ "$XBPS_TARGET_LIBC" = "musl" ]; then
+		vsed -e '\;sys/single_threaded.h;d' -i config/system-headers.mozbuild
+	fi
+}
+
+do_build() {
+	export AS="${CC}"
+	export CFLAGS="-O2"
+	export CXXFLAGS="-O2"
+	unset HOST_CFLAGS
+	unset HOST_CXXFLAGS
+	export LDFLAGS="-Wl,-rpath=/usr/lib/zen"
+
+	export CC=clang
+	export CXX=clang++
+	export AS=clang
+	export AR=llvm-ar
+	export NM=llvm-nm
+	export HOST_CC=clang
+	export HOST_CXX=clang++
+	export ASFLAGS="--target=${XBPS_CROSS_TRIPLET:-${XBPS_TRIPLET}}"
+
+	export WASM_CC=/usr/lib/llvm/${_llvmver}/bin/clang
+	export WASM_CXX=/usr/lib/llvm/${_llvmver}/bin/clang++
+
+	disable_jemalloc() {
+		if [ "$XBPS_TARGET_LIBC" = "musl" ]; then
+			echo "ac_add_options --disable-jemalloc"
+		fi
+	}
+
+	cat <<-EOF	>.mozconfig
+	ac_add_options --prefix=/usr
+	ac_add_options --libdir=/usr/lib
+	ac_add_options --host=${XBPS_TRIPLET}
+	ac_add_options --target=${XBPS_CROSS_TRIPLET:-${XBPS_TRIPLET}}
+	ac_add_options --enable-linker=lld
+	ac_add_options --disable-bootstrap
+	$(vopt_if lto 'ac_add_options --enable-lto=cross')
+	ac_add_options --with-libclang-path=/usr/lib
+
+	ac_add_options --enable-application=browser
+	ac_add_options --enable-release
+	ac_add_options --enable-hardening
+	ac_add_options --enable-optimize="\${CFLAGS}"
+	ac_add_options --enable-path-remapping=c,rust
+	ac_add_options --enable-packed-relative-relocs
+	ac_add_options --disable-cargo-incremental
+	ac_add_options --disable-tests
+	ac_add_options --disable-crashreporter
+	ac_add_options --disable-updater
+	ac_add_options --disable-install-strip
+	ac_add_options --disable-strip
+	ac_add_options --disable-profiling
+	ac_add_options --disable-elf-hack
+	$(disable_jemalloc)
+
+	ac_add_options --with-wasi-sysroot=/usr/share/wasi-sysroot
+
+	ac_add_options --enable-system-pixman
+	ac_add_options --with-system-ffi
+	ac_add_options --with-system-jpeg
+	ac_add_options --with-system-libevent
+	ac_add_options --with-system-nspr
+	ac_add_options --with-system-nss
+	ac_add_options --with-system-webp
+	ac_add_options --with-system-zlib
+	ac_add_options --without-system-png
+
+	ac_add_options --with-unsigned-addon-scopes=app,system
+	ac_add_options --allow-addon-sideload
+
+	ac_add_options --enable-dbus
+	ac_add_options --enable-necko-wifi
+	ac_add_options --disable-audio-backends
+	ac_add_options --enable-alsa
+	ac_add_options --enable-jack
+	ac_add_options --enable-pulseaudio
+	ac_add_options --enable-sndio
+	ac_add_options --enable-default-toolkit=cairo-gtk3-wayland
+
+	ac_add_options --with-app-name=zen
+	ac_add_options --with-branding=browser/branding/release
+
+	mk_add_options MOZ_OBJDIR="${wrksrc}/obj"
+	EOF
+
+	if [ -z "$build_option_debug" ]; then
+		echo "ac_add_options --disable-debug-symbols" >>.mozconfig
+		echo "ac_add_options --disable-debug" >>.mozconfig
+	fi
+
+	if [ "$SOURCE_DATE_EPOCH" ]; then
+		export MOZ_BUILD_DATE=$(date --date "@$SOURCE_DATE_EPOCH" "+%Y%m%d%H%M%S")
+	fi
+
+	export MOZ_MAKE_FLAGS="${makejobs}"
+	export MOZ_NOSPAM=1
+	export MOZBUILD_STATE_PATH="${wrksrc}/mozbuild"
+	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=system
+	export MOZILLA_OFFICIAL=1
+
+	rm -f old-configure
+
+	if [ "$build_option_pgo" ]; then
+		cp .mozconfig{,.orig}
+		echo "ac_add_options --enable-profile-generate=cross" >> .mozconfig
+
+		./mach build
+		./mach package
+		LLVM_PROFDATA=llvm-profdata \
+		JARLOG_FILE="$PWD/jarlog" \
+		GDK_BACKEND=x11 \
+		LD_LIBRARY_PATH="$PWD/obj/dist/zen" \
+		XDG_RUNTIME_DIR="$(mktemp -d "${wrksrc}/pgo-runtime-XXXXXX")" \
+		MOZ_ENABLE_WAYLAND=0 \
+		xvfb-run -s "-screen 0 1920x1080x24 -nolisten local" \
+		dbus-run-session -- ./mach python build/pgo/profileserver.py
+
+		test -s merged.profdata
+		test -s jarlog
+
+		./mach clobber objdir
+
+		cp .mozconfig{.orig,}
+		cat <<-EOF >>.mozconfig
+		ac_add_options --enable-lto=cross,full
+		ac_add_options --enable-profile-use=cross
+		ac_add_options --with-pgo-profile-path=${PWD@Q}/merged.profdata
+		ac_add_options --with-pgo-jarlog=${PWD@Q}/jarlog
+		EOF
+	fi
+
+	./mach build
+}
+
+do_install() {
+	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=system
+	export MOZBUILD_STATE_PATH="${wrksrc}/mozbuild"
+	DESTDIR="$DESTDIR" ./mach install
+
+	vinstall "${FILESDIR}/vendor.js" 644 usr/lib/zen/browser/defaults/preferences
+	vinstall "${FILESDIR}/zen.desktop" 644 usr/share/applications
+
+	for i in 16x16 22x22 24x24 32x32 48x48 64x64 128x128 256x256; do
+		vinstall ${wrksrc}/browser/branding/release/default${i%x*}.png 644 \
+		usr/share/icons/hicolor/${i}/apps zen.png
+	done
+
+	rm -rf ${DESTDIR}/usr/{include,lib/zen-devel,share/idl}
+
+	# https://bugzilla.mozilla.org/show_bug.cgi?id=658850
+	ln -sf zen "${DESTDIR}/usr/lib/zen/zen-bin"
+}
