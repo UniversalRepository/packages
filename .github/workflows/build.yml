@@ -27,6 +27,11 @@ jobs:
             repo: builddir/arch/x86_64
             key: UREPO_GPG_KEY
             metadata: "universalrepository.db* universalrepository.files*"
+          - distro: chimera
+            arch: x86_64
+            repo: builddir/chimera/packages
+            key: UREPO_KEY_RSA
+            metadata: "Packages.adb APKINDEX.tar.gz"
     container:
       image: ghcr.io/universalrepository/builder:latest
       options: --privileged --user 0

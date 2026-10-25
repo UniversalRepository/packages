@@ -28,6 +28,28 @@ esac
 
 adapter=$UREPO_ROOT/.ci/backends/$DISTRO.sh
 [[ -r $adapter ]] || die "missing selection adapter: .ci/backends/$DISTRO.sh"
+
+ci_recipes() {
+    local dir
+    for dir in "$PKGS_DIR"/*; do
+        [[ -d $dir && ! -L $dir ]] || continue
+        ci_has_recipe "${dir##*/}" && printf '%s\n' "${dir##*/}"
+    done
+    return 0
+}
+ci_validate_recipe() {
+    case $1 in
+        ''|[!a-zA-Z0-9]*|*[!a-zA-Z0-9._+-]*) die "invalid package: $1" ;;
+    esac
+}
+ci_has_recipe() {
+    local file IFS=
+    for file in "$PKGS_DIR/$1"/$TEMPLATE; do
+        [[ -f $file ]] && return 0
+    done
+    return 1
+}
+
 source "$adapter" >&2
 for hook in ci_config ci_prepare ci_expected ci_available; do
     declare -F "$hook" >/dev/null || die "missing $hook in $adapter"
@@ -35,27 +57,17 @@ done
 ci_config >&2
 : "${ARCH:?adapter must set ARCH}" "${PKGS_DIR:?adapter must set PKGS_DIR}" "${REPO_DIR:?adapter must set REPO_DIR}" "${TEMPLATE:?adapter must set TEMPLATE}"
 
-has_recipe() {
-    local file IFS=
-    for file in "$PKGS_DIR/$1"/$TEMPLATE; do
-        [[ -f $file ]] && return 0
-    done
-    return 1
-}
 if (( $# == 0 )); then
-    for dir in "$PKGS_DIR"/*; do
-        [[ -d $dir && ! -L $dir ]] || continue
-        if has_recipe "${dir##*/}"; then
-            set -- "$@" "${dir##*/}"
-        fi
-    done
+    recipe_list=$(ci_recipes) || die "cannot list recipes: $DISTRO"
+    if [[ -n $recipe_list ]]; then
+        mapfile -t recipes <<< "$recipe_list"
+        set -- "${recipes[@]}"
+    fi
 fi
 (( $# )) || exit 0
 for recipe in "$@"; do
-    case $recipe in
-        ''|[!a-zA-Z0-9]*|*[!a-zA-Z0-9._+-]*) die "invalid package: $recipe" ;;
-    esac
-    has_recipe "$recipe" || die "missing recipe: $DISTRO/$recipe"
+    ci_validate_recipe "$recipe"
+    ci_has_recipe "$recipe" || die "missing recipe: $DISTRO/$recipe"
 done
 
 scratch=$(mktemp -d)

@@ -38,6 +38,9 @@ jobs:
           - distro: arch
             arch: x86_64
             repo: builddir/arch/x86_64
+          - distro: chimera
+            arch: x86_64
+            repo: builddir/chimera/packages
     container:
       image: ghcr.io/universalrepository/builder:latest
       options: --privileged --user 0
@@ -67,6 +70,7 @@ jobs:
           case "$DISTRO" in
             void) recipes=void/srcpkgs; recipe_file=template ;;
             arch) recipes=arch/pkgs; recipe_file=PKGBUILD ;;
+            chimera) recipes=chimera; recipe_file=template.py ;;
             *) printf 'error: no PR selection rules for %s\n' "$DISTRO" >&2; exit 1 ;;
           esac
 
@@ -78,12 +82,23 @@ jobs:
             case "$path" in
               "$recipes"/*/*)
                 package=${path#"$recipes"/}
+                if [[ $DISTRO == chimera ]]; then
+                  case "$package" in
+                    main/*|user/*) package=${package#*/} ;;
+                    *) continue ;;
+                  esac
+                fi
                 package=${package%%/*}
-                [ -f "$recipes/$package/$recipe_file" ] || continue
+                if [[ $DISTRO == chimera ]]; then
+                  [[ -f "$recipes/main/$package/$recipe_file" || \
+                     -f "$recipes/user/$package/$recipe_file" ]] || continue
+                else
+                  [ -f "$recipes/$package/$recipe_file" ] || continue
+                fi
                 selected["$package"]=1
                 ;;
               urepo|src/*|.ci/*|Containerfile|.github/workflows/*|\
-              "$DISTRO/build.sh"|"$DISTRO/common/"*|"$DISTRO/etc/"*)
+              "$DISTRO/build.sh"|"$DISTRO/metadata.py"|"$DISTRO/common/"*|"$DISTRO/etc/"*)
                 all=1
                 ;;
             esac
@@ -129,7 +144,7 @@ jobs:
           runuser -u builder -- bash -euo pipefail -c '
             umask 077
             case "$DISTRO" in
-              void)
+              void|chimera)
                 openssl genrsa -out "$SIGN_KEY" 2048
                 ;;
               arch)
