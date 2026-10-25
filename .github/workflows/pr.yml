@@ -1,0 +1,168 @@
+name: PR build
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  SIGNED_BY: UniversalRepository PR test
+
+jobs:
+  approval:
+    if: >-
+      !startsWith(github.event.pull_request.title, '[skip ci]')
+    runs-on: ubuntu-26.04
+    environment: pr-build
+    steps:
+      - name: Approve PR build
+        run: echo 'PR build approved'
+
+  build:
+    needs: approval
+    runs-on: ${{ matrix.runner || 'ubuntu-26.04' }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: void
+            arch: x86_64
+            repo: builddir/void/hostdir/binpkgs
+          - distro: arch
+            arch: x86_64
+            repo: builddir/arch/x86_64
+    container:
+      image: ghcr.io/universalrepository/builder:latest
+      options: --privileged --user 0
+    defaults:
+      run:
+        shell: bash
+    env:
+      DISTRO: ${{ matrix.distro }}
+      ARCH: ${{ matrix.arch }}
+      REPO_DIR: ${{ matrix.repo }}
+      SIGN_KEY: /tmp/urepo-signing/key
+    steps:
+      - name: Pull repository
+        uses: classabbyamp/treeless-checkout-action@v1
+
+      - name: Prepare workspace
+        run: |
+          mkdir -p "$REPO_DIR"
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          
+      - name: Find packages to build
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          case "$DISTRO" in
+            void) recipes=void/srcpkgs; recipe_file=template ;;
+            arch) recipes=arch/pkgs; recipe_file=PKGBUILD ;;
+            *) printf 'error: no PR selection rules for %s\n' "$DISTRO" >&2; exit 1 ;;
+          esac
+
+          git diff --name-only --no-renames -z "$PR_BASE_SHA...$PR_HEAD_SHA" \
+            > .changed-paths
+          all=0
+          declare -A selected=()
+          while IFS= read -r -d '' path; do
+            case "$path" in
+              "$recipes"/*/*)
+                package=${path#"$recipes"/}
+                package=${package%%/*}
+                [ -f "$recipes/$package/$recipe_file" ] || continue
+                selected["$package"]=1
+                ;;
+              urepo|src/*|.ci/*|Containerfile|.github/workflows/*|\
+              "$DISTRO/build.sh"|"$DISTRO/common/"*|"$DISTRO/etc/"*)
+                all=1
+                ;;
+            esac
+          done < .changed-paths
+
+          packages=()
+          : > .list
+          if (( ! all )); then
+            if (( ${#selected[@]} == 0 )); then
+              printf 'No changed packages for %s\n' "$DISTRO"
+              exit 0
+            fi
+            mapfile -t packages < <(printf '%s\n' "${!selected[@]}" | sort)
+          fi
+          runuser -u builder -- env UREPO_VOID_XBPS_ARGS="${EXTRA_ARGS:-}" \
+            ./.ci/unbuilt.sh "$DISTRO" "${packages[@]}" > .list.pending
+          mv .list.pending .list
+          cat .list
+
+      - name: Check build environment
+        run: |
+          set -eu
+          [ -s .list ] || exit 0
+          case "$DISTRO" in
+            void)
+              checkdir=$(mktemp -d)
+              trap 'rm -rf "$checkdir"' EXIT
+              mkdir -p "$checkdir"/{proc,sys,dev}
+              install -m 755 "$(command -v xbps-uhelper)" "$checkdir/xbps-uhelper"
+              chown builder:builder "$checkdir"
+              runuser -u builder -- xbps-uchroot "$checkdir" /xbps-uhelper -V
+              ;;
+            arch)
+              runuser -u builder -- sudo -n unshare --mount --propagation private /bin/true
+              ;;
+          esac
+
+      - name: Generate temporary signing key
+        run: |
+          set -euo pipefail
+          [ -s .list ] || exit 0
+          install -d -m 700 -o builder -g builder "${SIGN_KEY%/*}"
+          runuser -u builder -- bash -euo pipefail -c '
+            umask 077
+            case "$DISTRO" in
+              void)
+                openssl genrsa -out "$SIGN_KEY" 2048
+                ;;
+              arch)
+                export GNUPGHOME="${SIGN_KEY%/*}/gpg"
+                mkdir -m 700 "$GNUPGHOME"
+                gpg --batch --pinentry-mode loopback --passphrase "" \
+                  --quick-generate-key "$SIGNED_BY <ci@example.com>" rsa2048 sign 0
+                gpg --batch --armor --export-secret-keys > "$SIGN_KEY"
+                ;;
+              *)
+                printf "error: no PR signing key generator for %s\n" "$DISTRO" >&2
+                exit 1
+                ;;
+            esac
+          '
+
+      - name: Build packages
+        run: |
+          set -euo pipefail
+          [ -s .list ] || exit 0
+          runuser -u builder -- env \
+            UREPO_VOID_SIGN_KEY="$SIGN_KEY" \
+            UREPO_GPG_SIGN_KEY="$SIGN_KEY" \
+            UREPO_VOID_SIGNED_BY="$SIGNED_BY" \
+            UREPO_VOID_XBPS_ARGS="${EXTRA_ARGS:-}" \
+            XBPS_ARCH="$ARCH" XBPS_TARGET_ARCH="$ARCH" \
+            UREPO_ARCH_ARCH="$ARCH" \
+            bash -euo pipefail -c '
+              cd "$1"
+              mapfile -t packages < .list
+              ./urepo build "${packages[@]}"
+            ' bash "$GITHUB_WORKSPACE" 2>&1 | tee build.log
+
+      - name: Remove keys
+        if: always()
+        run: rm -rf "${SIGN_KEY%/*}" "builddir/$DISTRO/gpg"
