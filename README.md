@@ -20,8 +20,8 @@ Currently only x86_64 targets are supported.
 | ------ | ---- | ------ | ------------ | ------ |
 | Arch Linux | `arch/pkgs` | `PKGBUILD` | `makepkg` | Supported |
 | Void Linux (glibc) | `void/srcpkgs` | `template` | `xbps-src` | Supported |
+| Chimera Linux | `chimera/main`, `chimera/user` | `template.py` | `cbuild` | Supported |
 | Fedora / openSUSE | `rpm/specs` | `SPEC` | `rpmbuild` | In Progress |
-| Chimera Linux | `chimera/main`, `chimera/user` | `template.py` | `cbuild` | In Progress |
 
 ## Installation
 
@@ -97,6 +97,58 @@ List all packages:
 xbps-query -iM --repository=https://sourceforge.net/projects/univ
 ersalrepository/files/void -s ''
 ```
+</details>
+
+<details>
+<summary><strong>Chimera Linux</strong></summary>
+
+### 1. Add the repository
+This adds the `user` repository:
+```bash
+echo 'v3 https://downloads.sourceforge.net/project/universalrepository/chimera/user' | sudo tee /etc/apk/repositories.d/00-universalrepository.list
+```
+
+If using packages from `main`, add its URL to the same file once that repository contains packages:
+```text
+v3 https://downloads.sourceforge.net/project/universalrepository/chimera/main
+```
+
+### 2. Import the key and sync
+
+Download and install our public key:
+```bash
+curl -fLo universalrepository.rsa.pub https://downloads.sourceforge.net/project/universalrepository/chimera/universalrepository.rsa.pub
+sudo install -m 644 universalrepository.rsa.pub /etc/apk/keys/
+rm universalrepository.rsa.pub
+```
+
+Sync the repositories:
+```bash
+sudo apk update
+```
+
+### 3. Packages
+
+Now you can install a package from URepo:
+```bash
+sudo apk add umbriel
+```
+
+List packages in the `user` repository:
+```bash
+apk list --from none --repository https://downloads.sourceforge.net/project/universalrepository/chimera/user
+```
+
+For debug symbols, also add the following to the repository file and sync again:
+```text
+v3 https://downloads.sourceforge.net/project/universalrepository/chimera/user/debug
+```
+
+Then install the corresponding debug package:
+```bash
+sudo apk add umbriel-dbg
+```
+
 </details>
 
 ## Building packages natively
