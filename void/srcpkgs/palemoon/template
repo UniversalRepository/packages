@@ -1,0 +1,135 @@
+# Template file for 'palemoon'
+pkgname=palemoon
+version=35.0.2
+revision=1
+_uxp_ver=20261006
+archs="x86_64* i686"
+
+build_options="gtk2 gtk3"
+build_options_default="gtk3"
+desc_option_gtk2="Build with GTK+2"
+desc_option_gtk3="Build with GTK+3"
+
+hostmakedepends="autoconf213 desktop-file-utils nasm perl pkg-config python3
+	tar unzip which yasm zip"
+makedepends="alsa-lib-devel bzip2-devel dbus-glib-devel fontconfig-devel
+	freetype-devel gtk+-devel gtk+3-devel libX11-devel
+	libxcb-devel libXcomposite-devel libXcursor-devel libXdamage-devel
+	libXext-devel libXfixes-devel libXi-devel libXinerama-devel
+	libXrandr-devel libXrender-devel libXt-devel libXxf86vm-devel
+	MesaLib-devel openssl-devel pulseaudio-devel sqlite-devel
+	startup-notification-devel"
+depends="desktop-file-utils hicolor-icon-theme shared-mime-info"
+
+short_desc="Unofficial web browser based on Firefox focusing on efficiency"
+maintainer="Haris <plavpxl@proton.me>"
+license="MPL-2.0"
+homepage="https://www.palemoon.org"
+changelog="https://www.palemoon.org/releasenotes.shtml"
+
+distfiles="https://repo.palemoon.org/MoonchildProductions/Pale-Moon/archive/${version}_Release.tar.gz
+ https://repo.palemoon.org/MoonchildProductions/UXP/archive/RB_${_uxp_ver}.tar.gz"
+
+checksum="d913f23d52ac8be2bde043e39da072471c53e852eda24db639ef4f9785436eeb
+ 92ca1d15d20ff0d4ead208e0b91b0a83ab31e52517cf8b912d8f565f37bf5b8f"
+
+skip_extraction="RB_${_uxp_ver}.tar.gz"
+
+post_extract() {
+	mkdir -p platform
+	vsrcextract -C platform --strip-components=1 "RB_${_uxp_ver}.tar.gz"
+}
+
+pre_configure() {
+	local gtk_ver=3
+	if [ "$build_option_gtk2" ]; then
+		gtk_ver=2
+	fi
+
+	local jemalloc="--enable-jemalloc"
+	if [ "$XBPS_TARGET_LIBC" = "musl" ]; then
+		jemalloc="--disable-jemalloc"
+	fi
+
+	cat > .mozconfig <<-EOF
+_BUILD_64=1
+_GTK_VERSION=$gtk_ver
+
+ac_add_options --enable-application=palemoon
+ac_add_options --enable-optimize="-O2 -w"
+ac_add_options --enable-default-toolkit=cairo-gtk\$_GTK_VERSION
+ac_add_options $jemalloc
+ac_add_options --enable-strip
+ac_add_options --enable-devtools
+ac_add_options --enable-av1
+ac_add_options --disable-webrtc
+ac_add_options --disable-gamepad
+ac_add_options --disable-tests
+ac_add_options --disable-debug
+ac_add_options --disable-necko-wifi
+ac_add_options --disable-updater
+ac_add_options --with-pthreads
+
+# see: https://www.palemoon.org/redist.shtml
+ac_add_options --disable-official-branding
+export MOZILLA_OFFICIAL=0
+
+ac_add_options --x-libraries=/usr/lib
+
+export MOZ_PKG_SPECIAL=gtk\$_GTK_VERSION
+EOF
+
+	export MOZBUILD_STATE_PATH="$wrksrc/mozbuild"
+	export MOZCONFIG=".mozconfig"
+	export MACH_BUILD_PYTHON_NATIVE_PACKAGE_SOURCE=system
+}
+
+do_build() {
+	export AS="${CC:-gcc}"
+	export CFLAGS="-O2"
+	export CXXFLAGS="-O2"
+
+	export LDFLAGS="-Wl,-rpath=/usr/lib/palemoon"
+	export LDFLAGS="${LDFLAGS/-Wl,-z,pack-relative-relocs/}"
+
+	export MOZ_MAKE_FLAGS="${makejobs}"
+	export MOZ_NOSPAM=1
+
+	if [ "$XBPS_TARGET_LIBC" = "musl" ]; then
+		# libstagefright expects glibc 64bit offset type
+		export CFLAGS+=" -Doff64_t=off_t"
+		export CXXFLAGS+=" -Doff64_t=off_t"
+	fi
+
+	if [ "$XBPS_TARGET_WORDSIZE" = "32" ]; then
+		export LDFLAGS+=" -Wl,--no-keep-memory"
+	fi
+
+	./mach build
+}
+
+do_install() {
+	make -C obj-*/palemoon/installer stage-package
+	vmkdir usr/lib/palemoon
+	cp -a obj-*/dist/palemoon/. "${DESTDIR}/usr/lib/palemoon/"
+
+	vmkdir usr/bin
+	cat <<-'EOF' > "${DESTDIR}/usr/bin/palemoon"
+	#!/bin/sh
+	exec /usr/lib/palemoon/palemoon "$@"
+	EOF
+	chmod 755 "${DESTDIR}/usr/bin/palemoon"
+
+	vinstall palemoon/branding/unofficial/default16.png 644 "usr/share/icons/hicolor/16x16/apps" palemoon.png
+	vinstall palemoon/branding/unofficial/default32.png 644 "usr/share/icons/hicolor/32x32/apps" palemoon.png
+	vinstall palemoon/branding/unofficial/default48.png 644 "usr/share/icons/hicolor/48x48/apps" palemoon.png
+	vinstall palemoon/branding/unofficial/mozicon128.png 644 "usr/share/icons/hicolor/128x128/apps" palemoon.png
+
+	vinstall palemoon/branding/unofficial/newmoon.desktop 644 usr/share/applications
+}
+
+post_install() {
+	# see: https://www.palemoon.org/redist.shtml
+	vlicense LICENSE
+}
+
