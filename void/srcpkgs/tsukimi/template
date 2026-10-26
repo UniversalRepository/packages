@@ -1,0 +1,19 @@
+# Template file for 'tsukimi'
+pkgname=tsukimi
+version=26.10.1
+revision=1
+build_style=meson
+build_helper=rust
+hostmakedepends="appstream-glib blueprint-compiler cargo desktop-file-utils
+ gettext glib-devel pkg-config python3"
+makedepends="dbus-devel glib-devel glycin-devel gstreamer1-devel
+ gst-plugins-base1-devel gst-plugins-bad1-devel gtk4-devel
+ libadwaita-devel libepoxy-devel libglib-devel mpv-devel openssl-devel"
+depends="glycin-loaders libepoxy"
+short_desc="Third-party Jellyfin client"
+maintainer="Haris <plavpxl@proton.me>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/tsukinaha/tsukimi"
+changelog="${homepage}/releases/tag/v${version}"
+distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
+checksum=0f512eba652282366e51a8f928e1d8e7fb45bc833e5651ed5d16c081dda1c12f
