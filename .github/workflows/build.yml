@@ -192,3 +192,69 @@ jobs:
         run: |
           rm -rf "${SIGN_KEY%/*}" "builddir/$DISTRO/gpg"
           rm -f /root/.ssh/urepo
+
+  index:
+    needs: build
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/universalrepository/builder:latest
+      options: --user 0
+    defaults:
+      run:
+        shell: bash
+    env:
+      SF_USER: ${{ vars.UREPO_SOURCEFORGE_USER }}
+      SF_BASE: ${{ vars.UREPO_SOURCEFORGE_PATH }}
+    steps:
+      - name: Pull repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup upload target
+        env:
+          SSH_KEY: ${{ secrets.UREPO_SOURCEFORGE_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.UREPO_SOURCEFORGE_KNOWN_HOSTS }}
+        run: |
+          set -eu
+          : "${SF_USER:?missing SourceForge username}"
+          : "${SF_BASE:?missing SourceForge directory}"
+          : "${SSH_KEY:?missing SourceForge SSH key}"
+          : "${KNOWN_HOSTS:?missing SourceForge host keys}"
+          umask 077
+          mkdir -p /root/.ssh
+          printf '%s\n' "$SSH_KEY" > /root/.ssh/urepo
+          printf '%s\n' "$KNOWN_HOSTS" > /root/.ssh/known_hosts
+          cat > /root/.ssh/config <<'SSH'
+          Host frs.sourceforge.net
+              IdentityFile /root/.ssh/urepo
+              IdentitiesOnly yes
+              BatchMode yes
+              StrictHostKeyChecking yes
+          SSH
+
+      - name: Pull published metadata
+        run: |
+          set -euo pipefail
+          python3 .ci/index.py --patterns > .index-patterns
+          filters=(--include='*/')
+          while IFS= read -r pattern; do
+            filters+=("--include=$pattern")
+          done < .index-patterns
+          mkdir -p published
+          rsync -rtL "${filters[@]}" --exclude='*' \
+            "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/" published/
+
+      - name: Generate package index
+        run: python3 .ci/index.py --root published --output packages.json
+
+      - name: Upload package index
+        run: |
+          set -eu
+          rsync -rtv --chmod=F644 packages.json "$SF_USER@frs.sourceforge.net:${SF_BASE%/}/packages.json"
+
+      - name: Remove keys
+        if: always()
+        run: rm -f /root/.ssh/urepo
