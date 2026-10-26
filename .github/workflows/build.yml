@@ -96,6 +96,10 @@ jobs:
         run: |
           set -eu
           [ -s .list ] || exit 0
+
+          sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
+          sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          
           case "$DISTRO" in
             void)
               checkdir=$(mktemp -d)
