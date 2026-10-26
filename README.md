@@ -178,6 +178,7 @@ Builds sign their output. Create/use a key for each distro.
 | --- | --- | --- |
 | Void | `keys/void.pem` | RSA private key in PEM format |
 | Arch | `keys/arch.key` | OpenPGP private key export, ASCII armored or binary |
+| Chimera | `keys/chimera.rsa` | RSA unencrypted private key in PEM format |
 
 ### 3. Build packages
 Start the container:
