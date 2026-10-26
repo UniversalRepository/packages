@@ -1,0 +1,106 @@
+name: Package request
+description: Request a new package, an update, or a package for another distro
+body:
+  - type: markdown
+    attributes:
+      value: |
+        You can request a package even if you can't make a template yourself.
+        Please check existing issues and packages first.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What are you requesting?
+      options:
+        - A new package
+        - An update to an existing package
+        - An existing package for another distro
+    validations:
+      required: true
+
+  - type: input
+    id: package
+    attributes:
+      label: Package name
+    validations:
+      required: true
+
+  - type: input
+    id: homepage
+    attributes:
+      label: Homepage or source repository
+      placeholder: https://...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: distros
+    attributes:
+      label: Which distro(s)?
+      description: |
+        Select all that apply.
+        For a whole new distro backend, use the backend proposal form instead.
+      multiple: true
+      options:
+        - Void Linux
+        - Arch Linux
+        - Chimera Linux
+        - Fedora / openSUSE (support in progress)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why should we add and maintain this package?
+      description: |
+        Briefly explain what it does and why you would like it added.
+        If requesting an update, mention the version and any relevant fixes.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: Should it be compiled from source or repackage a binary?
+      options:
+        - Compile from source
+        - Repackage a binary
+        - Unsure
+    validations:
+      required: true
+
+  - type: input
+    id: release
+    attributes:
+      label: Version or release
+      description: |
+        Link the release or source archive if available.
+        If it is in beta/unreleased, mention that here.
+
+  - type: textarea
+    id: license
+    attributes:
+      label: License
+      description: |
+        Include the license if known.
+        If repackaging a binary, does upstream allow redistribution?
+
+  - type: textarea
+    id: existing
+    attributes:
+      label: Existing templates and other information
+      description: |
+        If a template already exists elsewhere, link it here.
+        Mention any known limitations, e.g. no musl support.
+        Does it appear to be safe? (no obvious malware, suspicious blobs, etc)
+
+  - type: dropdown
+    id: help
+    attributes:
+      label: Would you like to help?
+      description: It's fine if you only want to request it.
+      options:
+        - I can make and maintain the template
+        - I can help test it
+        - I am only requesting it

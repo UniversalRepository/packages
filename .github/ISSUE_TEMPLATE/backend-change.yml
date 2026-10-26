@@ -1,0 +1,77 @@
+name: Backend or build system proposal
+description: Suggest a new distro backend or changes to the build system
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Contributions to the build system are welcome too.
+        You don't need to have a finished implementation to open an issue.
+        If some details are unknown, we can work through them here.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What would you like to change?
+      options:
+        - Add a new distro backend
+        - Change an existing backend
+        - Change the shared CLI or build scripts
+        - Change CI, the container, or publishing
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: scope
+    attributes:
+      label: Affected distro or component
+      description: |
+        For a new distro, include a link to its packaging documentation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: What should this change do, and why?
+      description: |
+        Explain the problem or what you would like to make possible.
+        If something currently fails, include the command and error.
+    validations:
+      required: true
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: How would it work?
+      description: |
+        For a new distro, mention its packaging tools, template layout,
+        build environment, and intended architecture(s).
+        For other changes, briefly explain what you think needs changing.
+        It's fine if you don't have all of this figured out yet.
+    validations:
+      required: true
+
+  - type: textarea
+    id: integration
+    attributes:
+      label: Building, signing, and publishing
+      description: |
+        How would packages be selected for building, signed, and indexed?
+        Would the container need additional tools?
+        Mention how it would fit into the existing workflow, if known.
+
+  - type: textarea
+    id: progress
+    attributes:
+      label: Current progress
+      description: |
+        Have you built anything with it yet?
+        Include any working package, logs, branch, or draft PR.
+        Mention what works, what doesn't, and where help is needed.
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Additional information
+      description: Link related issues or existing implementations if applicable.

@@ -1,0 +1,88 @@
+name: Bug report
+description: A package or part of the build system is not working
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check if this has already been reported.
+        Include as much relevant information as possible, especially commands and logs.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: What is affected?
+      options:
+        - Building a package
+        - Installing or running a package
+        - Repository metadata or signing
+        - A distro backend
+        - Shared build scripts, CI, or container
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: target
+    attributes:
+      label: Affected distro and package/component
+      description: Include the package version and revision if applicable.
+      placeholder: void/foo 1.0.0_1, chimera backend, src/cli
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: System information
+      description: |
+        Include your distro, architecture, and libc if applicable.
+        If building locally, include the URepo commit.
+        If using a container, include the image and Podman/Docker version.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the commands and any configuration needed to reproduce it.
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Include the error and some output before it.
+        For long logs, attach a text file or link the workflow run.
+        Please remove any passwords, tokens, or private keys.
+      render: text
+
+  - type: textarea
+    id: related
+    attributes:
+      label: Additional information
+      description: |
+        Does this happen with the official distro package too?
+        If there is an upstream report or a workaround, include it here.
+        It's fine if you don't know.
