@@ -1,0 +1,22 @@
+# Template file for 'abaddon'
+pkgname=abaddon
+version=0.2.4
+revision=2
+build_style=cmake
+hostmakedepends="git pkg-config"
+makedepends="json-c++ libcurl-devel libsecret-devel gtkmm-devel sqlite-devel openssl-devel
+ libhandy1-devel opus-devel libsodium-devel spdlog"
+short_desc="Alternative Discord client made in C++ with GTK"
+maintainer="Haris <plavpxl@proton.me>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/uowuo/abaddon"
+
+do_fetch() {
+	git clone --branch "v${version}" \
+	--single-branch --depth 1 \
+	--recurse-submodules="subprojects" \
+	--shallow-submodules \
+	"${homepage}.git" \
+	"${wrksrc}"
+}
+
