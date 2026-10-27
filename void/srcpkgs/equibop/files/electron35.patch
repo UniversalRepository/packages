@@ -1,0 +1,30 @@
+--- a/src/main/ipc.ts
++++ b/src/main/ipc.ts
+@@ -16,9 +16,9 @@
+     app,
+     BrowserWindow,
+     clipboard,
+-    ClipboardItem,
+     dialog,
+     type IpcMainInvokeEvent,
++    nativeImage,
+     type RelaunchOptions,
+     session,
+     shell
+@@ -178,12 +178,10 @@
+ handle(IpcEvents.CLIPBOARD_COPY_IMAGE, async (_, buf: ArrayBuffer, src: string) => {
+     src = src.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+ 
+-    clipboard.write([
+-        new ClipboardItem({
+-            "text/html": `<img src="${src}" />`,
+-            "image/png": new Blob([buf], { type: "image/png" })
+-        })
+-    ]);
++    clipboard.write({
++        html: `<img src="${src}" />`,
++        image: nativeImage.createFromBuffer(Buffer.from(buf))
++    });
+ });
+ 
+ function openDebugPage(page: string) {

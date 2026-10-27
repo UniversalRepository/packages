@@ -1,0 +1,51 @@
+--- a/venmic-7.2.3/CMakeLists.txt
++++ b/venmic-7.2.3/CMakeLists.txt
+@@ -42,7 +42,7 @@
+ if (venmic_use_fill)
+     set(rohrkabel_should_install OFF)
+ else()
+-    set(rohrkabel_should_install ON)
++    set(rohrkabel_should_install OFF)
+ endif()
+ 
+ # +-------------------------------------------------------------------------------------------------------+
+--- a/ereignis-6.3.0/CMakeLists.txt
++++ b/ereignis-6.3.0/CMakeLists.txt
+@@ -51,6 +51,10 @@
+ 
+ # --------------------------------------------------------------------------------------------------------
+ # Package Config
++
++if (NOT PROJECT_IS_TOP_LEVEL)
++    return()
++endif()
+ # --------------------------------------------------------------------------------------------------------
+ 
+ CPMFindPackage(
+--- a/venmic-7.2.3/src/patchbay.impl.cpp
++++ b/venmic-7.2.3/src/patchbay.impl.cpp
+@@ -1,4 +1,5 @@
+ #include "patchbay.impl.hpp"
++#include <spdlog/fmt/ranges.h>
+ #include "logger.hpp"
+ 
+ #include <string_view>
+@@ -740,7 +741,7 @@
+             return item.second.output.max > 0;
+         };
+ 
+-        logger::get()(debug, "[patchbay] (receive) listing nodes ({})", req.props);
++        logger::get()(debug, "[patchbay] (receive) listing nodes ({})", fmt::format("{}", req.props));
+ 
+         for (const auto start = clock::now(); clock::now() - start < 500ms && nodes.empty();)
+         {
+--- a/rohrkabel-13.1.1/src/impl/module.impl.cpp
++++ b/rohrkabel-13.1.1/src/impl/module.impl.cpp
+@@ -2,6 +2,7 @@
+ #include "context.hpp"
+ 
+ #include <format>
++#include <spa/utils/json.h>
+ 
+ #include <pipewire/pipewire.h>
+ #include <pipewire/impl-module.h>

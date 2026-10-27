@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/bin/electron35 /usr/lib/equibop/resources/app.asar "$@"

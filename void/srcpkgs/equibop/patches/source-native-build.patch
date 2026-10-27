@@ -1,0 +1,21 @@
+--- a/Equibop-3.3.2/scripts/build/build.mts
++++ b/Equibop-3.3.2/scripts/build/build.mts
+@@ -32,7 +32,7 @@
+     format: "cjs",
+     platform: "node",
+     external: ["electron", "original-fs"],
+-    target: ["esnext"],
++    target: ["node22"],
+     loader: {
+         ".node": "file"
+     },
+@@ -83,8 +83,7 @@
+ }
+ 
+ await Promise.all([
+-    copyVenmic(),
+-    copyLibVesktop(),
++    // Native helpers are built and staged by the distribution package.
+     createContext({
+         ...NodeCommonOpts,
+         entryPoints: ["src/main/index.ts"],

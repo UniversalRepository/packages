@@ -1,0 +1,174 @@
+# Template file for 'equibop'
+pkgname=equibop
+version=3.3.2
+revision=1
+_bun_version=1.4.4
+_electron_version=44.9.3
+archs="x86_64* aarch64*"
+create_wrksrc=yes
+build_wrksrc="Equibop-${version}"
+hostmakedepends="clang23 llvm23 lld23 cmake ninja nodejs pkg-config python3 unzip"
+makedepends="libglib-devel nodejs-devel pipewire-devel pulseaudio-devel"
+depends="hicolor-icon-theme libnotify xdg-utils"
+short_desc="Discord desktop client with Equicord and improved Linux support"
+maintainer="Haris <plavpxl@proton.me>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/Equicord/Equibop"
+changelog="https://github.com/Equicord/Equibop/releases"
+nocross=yes
+nostrip=yes
+noshlibprovides=yes
+
+build_options="system_electron"
+build_options_default="system_electron"
+desc_option_system_electron="Use system Electron 35 instead of bundled Electron"
+
+if [ "$build_option_system_electron" ]; then
+	depends+=" electron35"
+fi
+
+case "$XBPS_MACHINE" in
+	x86_64)
+		_bun_arch=x64-baseline
+		_bun_checksum=e0446eb55995772eb9894bebae9a6be368d985a8b9271ee124486f9946eedd76 ;;
+	x86_64-musl)
+		_bun_arch=x64-musl-baseline
+		_bun_checksum=6e9c37098b293920aed28bfb51ab240e26d23bfdd9bbfecb3ad428ac166549bc ;;
+	aarch64)
+		_bun_arch=aarch64
+		_bun_checksum=baa6bb36f51d6e58561e02bbea825038a9df454f673d6d776e8bbf86f8c7850e ;;
+	aarch64-musl)
+		_bun_arch=aarch64-musl
+		_bun_checksum=57f01b02ac7113c61c935f28f38c2eab849e3c970dab21f8b640a87b1ef65009 ;;
+esac
+
+distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz>equibop-${version}.tar.gz
+ https://github.com/oven-sh/bun/releases/download/bun-v${_bun_version}/bun-linux-${_bun_arch}.zip>bun-${_bun_version}-${_bun_arch}.zip
+ https://github.com/Vencord/venmic/archive/refs/tags/v7.2.3.tar.gz>venmic-7.2.3.tar.gz
+ https://github.com/Curve/rohrkabel/archive/refs/tags/v13.1.1.tar.gz>rohrkabel-13.1.1.tar.gz
+ https://github.com/Curve/channel/archive/refs/tags/v4.0.0.tar.gz>channel-4.0.0.tar.gz
+ https://github.com/Curve/coco/archive/refs/tags/v4.7.2.tar.gz>coco-4.7.2.tar.gz
+ https://github.com/Curve/ereignis/archive/refs/tags/v6.3.0.tar.gz>ereignis-6.3.0.tar.gz
+ https://github.com/stephenberry/glaze/archive/refs/tags/v7.9.1.tar.gz>glaze-7.9.1.tar.gz
+ https://github.com/gabime/spdlog/archive/refs/tags/v1.17.0.tar.gz>spdlog-1.17.0.tar.gz
+ https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.43.1/CPM.cmake>CPM-0.43.1.cmake"
+checksum="81a5967f696f4ccf218f8b625623f54d043c676024cdcc29a574431d89922d3d
+ ${_bun_checksum}
+ 5bed271f1777e5e794273899a590e7f511e6131a8122e3c83f85bc3bf22cfc50
+ 940a269d18a54f9d8b1cfbfc29a130d713f05cfbd5ce716d69945d787c284eaa
+ 16046a7c27732e44ca37b7fb4a338feed3aba1feca056919d061f9d0e29b3607
+ 59441b4d706f97603b222d480814229dd276fdfcb39402c51de039eb24db3c42
+ e89a15cdba10af4598bb1cb4790f28774b1d62fa49e18db00a0ce00a539fc349
+ d6dee391276f5375672c35d06058e4fd8f1f30f62bae163a004b3bd13a4e2ae3
+ d8862955c6d74e5846b3f580b1605d2428b11d97a410d86e2fb13e857cd3a744
+ 1c40fc102ce9625d7de7eb14f541cab30cc3138dca627f0b0ec40293ce6c2934"
+skip_extraction="CPM-0.43.1.cmake"
+
+if [ ! "$build_option_system_electron" ]; then
+	if [ "$XBPS_TARGET_LIBC" = musl ]; then
+		broken="Bundled Electron is glibc-only, enable system_electron for musl"
+	fi
+	case "$XBPS_TARGET_MACHINE" in
+		x86_64*)
+			_electron_arch=x64
+			_electron_checksum=6e7fd2d450d442507b846ace4ae6e2bd17e1b1653e86a033b5231abfc23e6df4 ;;
+		aarch64*)
+			_electron_arch=arm64
+			_electron_checksum=8e70d53d920d84db869023280e5a1fbda82ecc58fea4443748e58309a3c80238 ;;
+	esac
+	_electron_zip="electron-v${_electron_version}-linux-${_electron_arch}.zip"
+	distfiles+=" https://github.com/electron/electron/releases/download/v${_electron_version}/${_electron_zip}"
+	checksum+=" ${_electron_checksum}"
+	skip_extraction+=" ${_electron_zip}"
+fi
+
+post_extract() {
+	local dep
+	for dep in venmic-7.2.3 rohrkabel-13.1.1 channel-4.0.0 coco-4.7.2 ereignis-6.3.0; do
+		vsrccopy CPM-0.43.1.cmake "${dep}/cmake"
+		mv "${dep}/cmake/CPM-0.43.1.cmake" "${dep}/cmake/cpm.cmake"
+	done
+	if [ ! "$build_option_system_electron" ]; then
+		mkdir electron-dist
+		vsrcextract -C electron-dist --no-strip-components "${_electron_zip}"
+	fi
+}
+
+post_patch() {
+	if [ "$build_option_system_electron" ]; then
+		patch -Np1 -i "${FILESDIR}/electron35.patch"
+	fi
+}
+
+do_configure() {
+	export PATH="${wrksrc}/bun-linux-${_bun_arch}:$PATH"
+	export CC=/usr/lib/llvm/23/bin/clang
+	export CXX=/usr/lib/llvm/23/bin/clang++
+	export ELECTRON_SKIP_BINARY_DOWNLOAD=1
+
+	bun install --frozen-lockfile --ignore-scripts
+	(
+		cd packages/libvesktop
+		bun install --frozen-lockfile --ignore-scripts
+		node node_modules/node-gyp/bin/node-gyp.js configure --nodedir=/usr --enable-lto=false
+	)
+
+	cmake -S "${wrksrc}/venmic-7.2.3" -B "${wrksrc}/build-venmic" -G Ninja \
+		-DCMAKE_BUILD_TYPE=None \
+		-DCMAKE_CXX_COMPILER="$CXX" \
+		-DCMAKE_CXX_FLAGS="${CPPFLAGS} ${CXXFLAGS}" \
+		-DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS}" \
+		-DCMAKE_JS_VERSION=7 -Dvenmic_addon=ON -DBUILD_SHARED_LIBS=OFF \
+		-DCMAKE_JS_INC="/usr/include/node;${PWD}/node_modules/node-addon-api" \
+		-Dchannel_install=OFF -Dcoco_install=OFF -Dglaze_INSTALL=OFF \
+		-DSPDLOG_INSTALL=OFF -DCPM_LOCAL_PACKAGES_ONLY=ON \
+		-DCPM_rohrkabel_SOURCE="${wrksrc}/rohrkabel-13.1.1" \
+		-DCPM_channel_SOURCE="${wrksrc}/channel-4.0.0" \
+		-DCPM_coco_SOURCE="${wrksrc}/coco-4.7.2" \
+		-DCPM_ereignis_SOURCE="${wrksrc}/ereignis-6.3.0" \
+		-DCPM_glaze_SOURCE="${wrksrc}/glaze-7.9.1" \
+		-DCPM_spdlog_SOURCE="${wrksrc}/spdlog-1.17.0"
+}
+
+do_build() {
+	export PATH="${wrksrc}/bun-linux-${_bun_arch}:$PATH"
+	export CC=/usr/lib/llvm/23/bin/clang
+	export CXX=/usr/lib/llvm/23/bin/clang++
+	(
+		cd packages/libvesktop
+		node node_modules/node-gyp/bin/node-gyp.js build --jobs="${XBPS_MAKEJOBS}"
+	)
+	cmake --build "${wrksrc}/build-venmic" -- ${makejobs}
+
+	rm -f static/dist/*.node static/dist/arrpc-*
+	cp packages/libvesktop/build/Release/vesktop.node "static/dist/libvesktop-${_arch_node}.node"
+	cp "${wrksrc}/build-venmic/addon/venmic-addon.node" "static/dist/venmic-${_arch_node}.node"
+	${STRIP} --strip-unneeded static/dist/*.node
+	bun run build
+
+	mkdir -p app-build build-output/resources/arrpc		
+	bun build --compile --minify node_modules/arrpc-bun/src/index.ts --outfile build-output/resources/arrpc/arrpc
+	cp -R dist static package.json LICENSE app-build/
+	node node_modules/@electron/asar/bin/asar.js pack app-build build-output/resources/app.asar --unpack '**/*.node'
+}
+
+case "$XBPS_TARGET_MACHINE" in
+	x86_64*) _arch_node=x64 ;;
+	aarch64*) _arch_node=arm64 ;;
+esac
+
+do_install() {
+	vmkdir usr/lib/equibop
+	if [ "$build_option_system_electron" ]; then
+		vcopy build-output/resources usr/lib/equibop
+		vbin "${FILESDIR}/equibop-system-electron" equibop
+	else
+		vcopy "${wrksrc}/electron-dist/*" usr/lib/equibop
+		rm -f "${DESTDIR}/usr/lib/equibop/resources/default_app.asar"
+		vcopy "build-output/resources/*" usr/lib/equibop/resources
+		chmod 4755 "${DESTDIR}/usr/lib/equibop/chrome-sandbox"
+		vbin "${FILESDIR}/equibop" equibop
+	fi
+	vinstall "${FILESDIR}/equibop.desktop" 644 usr/share/applications
+	vinstall build/icon.svg 644 usr/share/icons/hicolor/scalable/apps equibop.svg
+}
