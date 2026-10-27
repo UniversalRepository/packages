@@ -1,0 +1,67 @@
+--- a/Utilities/stack_trace.cpp
++++ b/Utilities/stack_trace.cpp
+@@ -8,7 +8,8 @@
+ #include <DbgHelp.h>
+ #include <codecvt>
+ #else
+-#include <execinfo.h>
++#include <unwind.h>
++#include <dlfcn.h>
+ #endif
+ 
+ namespace utils
+@@ -172,28 +173,39 @@
+ #else
+ 	std::vector<void*> get_backtrace(int max_depth)
+ 	{
+-		std::vector<void*> result(max_depth);
+-#ifndef ANDROID
+-		int depth = backtrace(result.data(), max_depth);
+-		result.resize(depth);
+-#endif
++		std::vector<void*> result;
++		if (max_depth <= 0)
++			return result;
++		result.reserve(max_depth);
++		struct trace_state
++		{
++			std::vector<void*>* frames;
++			usz limit;
++		} state{&result, static_cast<usz>(max_depth)};
++		_Unwind_Backtrace([](_Unwind_Context* ctx, void* arg) -> _Unwind_Reason_Code
++		{
++			auto& state = *static_cast<trace_state*>(arg);
++			if (state.frames->size() >= state.limit)
++				return _URC_END_OF_STACK;
++			if (auto ip = _Unwind_GetIP(ctx))
++				state.frames->push_back(reinterpret_cast<void*>(ip));
++			return _URC_NO_REASON;
++		}, &state);
+ 		return result;
+ 	}
+ 
+ 	std::vector<std::string> get_backtrace_symbols(const std::vector<void*>& stack)
+ 	{
+ 		std::vector<std::string> result;
+-#ifndef ANDROID
+ 		result.reserve(stack.size());
+-
+-		const auto symbols = backtrace_symbols(stack.data(), static_cast<int>(stack.size()));
+-		for (usz i = 0; i < stack.size(); ++i)
+-		{
+-			result.push_back(symbols[i]);
+-		}
+-
+-		free(symbols);
+-#endif
++		for (auto pointer : stack)
++		{
++			Dl_info info{};
++			if (dladdr(pointer, &info) && info.dli_sname)
++				result.push_back(fmt::format("%s@%p", info.dli_sname, pointer));
++			else
++				result.push_back(fmt::format("rpcs3@%p", pointer));
++		}
+ 		clean_backtrace(result);
+ 		return result;
+ 	}
