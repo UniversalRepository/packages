@@ -1,0 +1,35 @@
+# Template file for 'lufus'
+pkgname=lufus
+version=1.0.1
+revision=1
+build_style=python3-pep517
+hostmakedepends="python3-setuptools python3-wheel"
+depends="python3-psutil python3-pyside6 python3-pyside6-widgets python3-pyside6-svg
+ python3-pyudev python3-packaging python3-platformdirs polkit sudo
+ coreutils util-linux eudev parted dosfstools ntfs-3g exfatprogs
+ e2fsprogs udftools 7zip grub grub-x86_64-efi which"
+checkdepends="python3-pytest python3-psutil python3-pyudev
+ python3-platformdirs python3-packaging"
+short_desc="USB imaging and formatting utility inspired by Rufus"
+maintainer="Haris <plavpxl@proton.me>"
+license="MIT"
+homepage="https://github.com/Hogjects/Lufus"
+distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
+checksum=2c3f3317929f01080b63839ccf4b3c6794458caee66359ccaa86017964011ebd
+
+post_patch() {
+	vsed -i pyproject.toml -e "s/^version = \"1.0.0\"/version = \"${version}\"/"
+	vsed -i src/lufus/state.py -e "s/version: str = \"v1.0.0\"/version: str = \"v${version}\"/"
+	vsed -i src/lufus/writing/windows/flash.py -e 's/os.path.dirname(__file__), "uefi-ntfs.img"/os.path.dirname(os.path.dirname(__file__)), "uefi-ntfs.img"/'
+
+	cat >> MANIFEST.in <<'EOF'
+include src/lufus/writing/grub.cfg
+include src/lufus/writing/uefi-ntfs.img
+EOF
+}
+
+post_install() {
+	vinstall "${FILESDIR}/lufus.desktop" 644 usr/share/applications
+	vinstall src/lufus/gui/assets/lufus.png 644 usr/share/icons/hicolor/64x64/apps lufus.png
+	vlicense LICENSE
+}

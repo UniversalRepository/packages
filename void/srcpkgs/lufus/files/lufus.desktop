@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Lufus
+Comment=Create bootable USB drives and format removable media
+Exec=lufus
+Icon=lufus
+Terminal=false
+Categories=System;Utility;
+Keywords=USB;ISO;Flash;Format;Rufus;
+StartupNotify=true
