@@ -160,20 +160,20 @@ Packages are built for edge only. Repositories use `alpine/main`, `alpine/commun
 ### 1. Import the key
 ```bash
 curl -fLo universalrepository.rsa.pub https://downloads.sourceforge.net/project/universalrepository/alpine/universalrepository.rsa.pub
-sudo install -m 644 universalrepository.rsa.pub /etc/apk/keys/
+doas install -m 644 universalrepository.rsa.pub /etc/apk/keys/
 rm universalrepository.rsa.pub
 ```
 
 ### 2. Add the repository and sync
 For packages in `community`:
 ```bash
-echo 'https://downloads.sourceforge.net/project/universalrepository/alpine/community' | sudo tee -a /etc/apk/repositories
-sudo apk update
+echo 'https://downloads.sourceforge.net/project/universalrepository/alpine/community' | doas tee -a /etc/apk/repositories
+doas apk update
 ```
 
 ### 3. Install packages
 ```bash
-sudo apk add noctalia
+doas apk add noctalia
 ```
 
 </details>
