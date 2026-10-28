@@ -1,0 +1,19 @@
+# Template file for 'umbriel'
+pkgname=umbriel
+version=0.1.0.git20261025
+revision=1
+build_style=meson
+hostmakedepends="pkg-config wayland-scanner++"
+makedepends="wlroots0.20-devel wayland-devel libwaylandpp-devel wayland-protocols libxkbcommon-devel
+	libinput-devel eudev-libudev-devel pixman-devel libdrm-devel cairo-devel pango-devel
+	tomlplusplus-devel json-c++ libgbm-devel lcms2-devel jemalloc-devel libdisplay-info-devel libei-devel"
+short_desc="Independent compositor with scrolling/dwindle/master/floating layouts"
+maintainer="Yoshi <yoshi@yoshiwalsh.me>"
+license="MIT"
+homepage="https://docs.noctalia.dev/umbriel/"
+distfiles="https://github.com/noctalia-dev/umbriel/archive/fd0a6e9a2335355d3848290d805e9bb50efcbb74.tar.gz"
+checksum="fb8ad4bf0cdda7187c98a13edb5daf69951f3dc6f8e51ddc96c8588173cfc4ca"
+
+post_install() {
+	vlicense LICENSE
+}
