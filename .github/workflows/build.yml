@@ -32,6 +32,11 @@ jobs:
             repo: builddir/chimera/packages
             key: UREPO_KEY_RSA
             metadata: "Packages.adb APKINDEX.tar.gz"
+          - distro: alpine
+            arch: x86_64
+            repo: builddir/alpine/packages
+            key: UREPO_KEY_RSA
+            metadata: "APKINDEX.tar.gz"
     container:
       image: ghcr.io/universalrepository/builder:latest
       options: --privileged --user 0

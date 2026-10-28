@@ -41,6 +41,9 @@ jobs:
           - distro: chimera
             arch: x86_64
             repo: builddir/chimera/packages
+          - distro: alpine
+            arch: x86_64
+            repo: builddir/alpine/packages
     container:
       image: ghcr.io/universalrepository/builder:latest
       options: --privileged --user 0
@@ -71,6 +74,7 @@ jobs:
             void) recipes=void/srcpkgs; recipe_file=template ;;
             arch) recipes=arch/pkgs; recipe_file=PKGBUILD ;;
             chimera) recipes=chimera; recipe_file=template.py ;;
+            alpine) recipes=alpine; recipe_file=APKBUILD ;;
             *) printf 'error: no PR selection rules for %s\n' "$DISTRO" >&2; exit 1 ;;
           esac
 
@@ -80,11 +84,12 @@ jobs:
           declare -A selected=()
           while IFS= read -r -d '' path; do
             case "$path" in
+              "$DISTRO/common/"*|"$DISTRO/etc/"*) all=1 ;;
               "$recipes"/*/*)
                 package=${path#"$recipes"/}
-                if [[ $DISTRO == chimera ]]; then
-                  case "$package" in
-                    main/*|user/*) package=${package#*/} ;;
+                if [[ $DISTRO == chimera || $DISTRO == alpine ]]; then
+                  case "$DISTRO/$package" in
+                    chimera/main/*|chimera/user/*|alpine/main/*|alpine/community/*|alpine/testing/*) package=${package#*/} ;;
                     *) continue ;;
                   esac
                 fi
@@ -92,13 +97,17 @@ jobs:
                 if [[ $DISTRO == chimera ]]; then
                   [[ -f "$recipes/main/$package/$recipe_file" || \
                      -f "$recipes/user/$package/$recipe_file" ]] || continue
+                elif [[ $DISTRO == alpine ]]; then
+                  [[ -f "$recipes/main/$package/$recipe_file" || \
+                     -f "$recipes/community/$package/$recipe_file" || \
+                     -f "$recipes/testing/$package/$recipe_file" ]] || continue
                 else
                   [ -f "$recipes/$package/$recipe_file" ] || continue
                 fi
                 selected["$package"]=1
                 ;;
               urepo|src/*|.ci/*|Containerfile|.github/workflows/*|\
-              "$DISTRO/build.sh"|"$DISTRO/metadata.py"|"$DISTRO/common/"*|"$DISTRO/etc/"*)
+              "$DISTRO/"*.sh|"$DISTRO/metadata.py"|"$DISTRO/abuild.conf")
                 all=1
                 ;;
             esac
@@ -122,6 +131,10 @@ jobs:
         run: |
           set -eu
           [ -s .list ] || exit 0
+          
+          sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
+          sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          
           case "$DISTRO" in
             void)
               checkdir=$(mktemp -d)
@@ -144,7 +157,7 @@ jobs:
           runuser -u builder -- bash -euo pipefail -c '
             umask 077
             case "$DISTRO" in
-              void|chimera)
+              void|chimera|alpine)
                 openssl genrsa -out "$SIGN_KEY" 2048
                 ;;
               arch)
