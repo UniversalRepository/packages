@@ -1,0 +1,4 @@
+.include /etc/pki/tls/openssl.cnf
+
+[evp_properties]
+rh-allow-sha1-signatures = yes
