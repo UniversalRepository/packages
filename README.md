@@ -153,9 +153,9 @@ sudo apk add umbriel-dbg
 </details>
 
 <details>
-<summary>Alpine Linux edge</summary>
+<summary><strong>Alpine Linux</strong></summary>
 
-Packages are built for edge only. Repositories use `alpine/main`, `alpine/community`, and `alpine/testing` on SourceForge. Add a repository once it contains packages.
+Packages are built for edge only. Repositories use `alpine/main`, `alpine/community`, and `alpine/testing` on SourceForge.
 
 ### 1. Import the key
 ```bash
@@ -165,15 +165,15 @@ rm universalrepository.rsa.pub
 ```
 
 ### 2. Add the repository and sync
-For packages in `testing`:
+For packages in `community`:
 ```bash
-echo 'https://downloads.sourceforge.net/project/universalrepository/alpine/testing' | sudo tee -a /etc/apk/repositories
+echo 'https://downloads.sourceforge.net/project/universalrepository/alpine/community' | sudo tee -a /etc/apk/repositories
 sudo apk update
 ```
 
 ### 3. Install packages
 ```bash
-sudo apk add PACKAGE
+sudo apk add noctalia
 ```
 
 </details>
