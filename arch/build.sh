@@ -106,12 +106,16 @@ chown -R "$builder_uid:$builder_gid" "$work/x86_64"
 BUILD
 
     local -a archives=()
-    mapfile -d '' -t archives < <(find "$work/$arch" -maxdepth 1 -type f -name '*.pkg.tar.*' ! -name '*.sig' -print0)
-    (( ${#archives[@]} )) || die "no packages found in $work/$arch"
+    for pkg in "$@"; do
+        while IFS= read -r -d '' archive; do
+            archives+=("$work/$arch/${archive##*/}")
+        done < <(find "$work/root/build/$pkg/packages" -maxdepth 1 -type f -name '*.pkg.tar.*' ! -name '*.sig' -print0)
+    done
+    (( ${#archives[@]} )) || die 'no packages produced by this build'
     info 'Signing Arch packages'
     for archive in "${archives[@]}"; do
         gpg --batch --yes --detach-sign --output "$archive.sig" "$archive"
     done
-    repo-add --sign --verify --remove "$work/$arch/universalrepository.db.tar.gz" "${archives[@]}"
+    repo-add --sign --verify "$work/$arch/universalrepository.db.tar.gz" "${archives[@]}"
     info "Repository: $work/$arch"
 }
