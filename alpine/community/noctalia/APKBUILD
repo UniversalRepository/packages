@@ -1,0 +1,81 @@
+# aports Contributor: Alex Ungur <alexaandru@gmail.com>
+maintainer="Haris <plavpxl@proton.me>"
+pkgname=noctalia
+pkgver=5.4.0
+pkgrel=0
+_variant=elogind # Supported variants: basu, elogind
+pkgdesc="Lightweight Wayland shell built directly on Wayland and OpenGL ES"
+url="https://github.com/noctalia-dev/noctalia-shell"
+# armv7: error: use of undeclared identifier 'vld1q_f16|vcvt_f16_f32|vst1q_f16|etc.'
+arch="all !armv7"
+license="MIT"
+depends="$_variant polkit"
+makedepends="
+	$_variant-dev
+	build-base
+	cairo-dev
+	clang
+	cmake
+	compiler-rt
+	curl-dev
+	fontconfig-dev
+	freetype-dev
+	glib-dev
+	libical-dev
+	libjxl-dev
+	libqalculate-dev
+	librsvg-dev
+	libsecret-dev
+	libsndfile-dev
+	libsodium-dev
+	libwebp-dev
+	libxkbcommon-dev
+	linux-pam-dev
+	md4c-dev
+	mesa-dev
+	meson
+	nlohmann-json
+	pango-dev
+	pipewire-dev
+	pkgconf
+	polkit-dev
+	samurai
+	sdbus-cpp-dev
+	stb
+	tomlplusplus-dev
+	wayland-dev
+	wayland-protocols
+	wireplumber-dev
+	"
+source="$pkgname-$pkgver.tar.gz::https://github.com/noctalia-dev/noctalia/archive/refs/tags/v$pkgver.tar.gz"
+subpackages="$pkgname-doc"
+
+prepare() {
+	default_prepare
+
+	grep -RIl 'stb/' "$builddir" | xargs sed -i -e 's|\bstb/||g'
+}
+
+build() {
+	export SDBUSCPP_SDBUS_LIB=$_variant
+	export CC=clang
+	export CXX=clang++
+
+	abuild-meson . build
+	meson compile -C build
+}
+
+check() {
+	# Forward compatibility. There are no tests defined currently, so it's a noop.
+	meson test -C build --print-errorlogs --no-rebuild
+}
+
+package() {
+	DESTDIR="$pkgdir" meson install --no-rebuild -C build
+	install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/"$pkgname"
+	echo See https://docs.noctalia.dev > README.txt
+	install -Dm644 README.txt -t "$pkgdir"/usr/share/doc/"$pkgname"
+}
+sha512sums="
+8353c10f5ee73115f2c7b4a9faeebddfee646d665855886a83db75e6ba7ba554320104216c10efa646d61c1e3bac864f653e16407e8e78205ce03e615893599e  noctalia-5.4.0.tar.gz
+"
