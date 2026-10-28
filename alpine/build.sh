@@ -75,7 +75,7 @@ alpine_prepare() {
     mkdir -p "$work/config" "$work/packages" "$work/sources"
     info 'Preparing Alpine edge sources'
     if [[ ! -d $tree/.git ]]; then
-        git clone --depth 1 https://gitlab.alpinelinux.org/alpine/aports.git "$tree"
+        git clone --depth 1 https://github.com/alpinelinux/aports.git "$tree"
     fi
     git -C "$tree" fetch --depth 1 origin "$ref"
     git -C "$tree" reset --hard FETCH_HEAD
