@@ -23,6 +23,8 @@ ci_has_recipe() {
 
 ci_prepare() {
     alpine_require
+    PKGS_DIR=$(realpath -m -- "$PKGS_DIR")
+    REPO_DIR=$(realpath -m -- "$REPO_DIR")
     [[ $ARCH == x86_64 && $(uname -m) == x86_64 ]] || die 'the Alpine selector currently supports native x86_64 only'
     [[ $PKGS_DIR == "$UREPO_ROOT/alpine" ]] || die 'Alpine PKGS_DIR must point to alpine in this checkout'
     [[ $REPO_DIR == "$work/packages" ]] || die 'Alpine REPO_DIR must point to builddir/alpine/packages in this checkout'
