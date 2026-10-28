@@ -10,6 +10,7 @@ Use the distro's own packaging guidelines and checks:
 
 - **Void Linux:** Follow the [void-packages manual](https://github.com/void-linux/void-packages/blob/master/Manual.md). Templates should also pass [xlint](https://man.voidlinux.org/xlint).
 - **Arch Linux:** Follow the [Arch packaging standards](https://wiki.archlinux.org/title/Arch_package_guidelines). Check dependencies and any split packages produced by the `PKGBUILD`.
+- **Alpine Linux:** Follow the [Alpine packaging guidelines](https://wiki.alpinelinux.org/wiki/Creating_an_Alpine_package). Put recipes under `alpine/{main,community,testing}/PACKAGE` and test with `abuild rootbld` through URepo. Use `community` by default for stable releases, `testing` for git snapshots and experimental packages, and `main` for modified upstream aports packages. These categories are URepo conventions.
 - **Chimera Linux:** Follow the [cports packaging guidelines](https://github.com/chimera-linux/cports/blob/master/Packaging.md) and the checks provided by `cbuild`.
 
 Please also test installing and running the resulting package. Even if templates compile, they should still follow the respective distro's packaging conventions.
@@ -42,7 +43,7 @@ If a package is no longer maintained, or you no longer wish to maintain one (ðŸ˜
 
 ## Pull Requests
 
-The [PR build workflow](https://github.com/UniversalRepository/packages/blob/master/.github/workflows/pr.yml) tests changed packages for Void, Arch, and Chimera. Changes to shared build tooling can cause all packages for the affected distros to be selected.
+The [PR build workflow](https://github.com/UniversalRepository/packages/blob/master/.github/workflows/pr.yml) tests changed packages for Void, Arch, Chimera, and Alpine edge. Changes to shared build tooling can cause all packages for the affected distros to be selected.
 
 The workflow uses the `pr-build` environment, so builds may need maintainer approval before starting. PR builds use temporary signing keys and do not publish packages to SourceForge.
 

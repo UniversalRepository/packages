@@ -20,6 +20,7 @@ Currently only x86_64 targets are supported.
 | ------ | ---- | ------ | ------------ | ------ |
 | Arch Linux | `arch/pkgs` | `PKGBUILD` | `makepkg` | Supported |
 | Void Linux (glibc) | `void/srcpkgs` | `template` | `xbps-src` | Supported |
+| Alpine Linux edge | `alpine/main`, `alpine/community`, `alpine/testing` | `APKBUILD` | `abuild rootbld` | Supported |
 | Chimera Linux | `chimera/main`, `chimera/user` | `template.py` | `cbuild` | Supported |
 | Fedora / openSUSE | `rpm/specs` | `SPEC` | `rpmbuild` | In Progress |
 
@@ -151,6 +152,32 @@ sudo apk add umbriel-dbg
 
 </details>
 
+<details>
+<summary>Alpine Linux edge</summary>
+
+Packages are built for edge only. Repositories use `alpine/main`, `alpine/community`, and `alpine/testing` on SourceForge. Add a repository once it contains packages.
+
+### 1. Import the key
+```bash
+curl -fLo universalrepository.rsa.pub https://downloads.sourceforge.net/project/universalrepository/alpine/universalrepository.rsa.pub
+sudo install -m 644 universalrepository.rsa.pub /etc/apk/keys/
+rm universalrepository.rsa.pub
+```
+
+### 2. Add the repository and sync
+For packages in `testing`:
+```bash
+echo 'https://downloads.sourceforge.net/project/universalrepository/alpine/testing' | sudo tee -a /etc/apk/repositories
+sudo apk update
+```
+
+### 3. Install packages
+```bash
+sudo apk add PACKAGE
+```
+
+</details>
+
 ## Building packages natively
 Building is done simply using the `urepo` entry point:
 ```bash
@@ -179,6 +206,7 @@ Builds sign their output. Create/use a key for each distro.
 | Void | `keys/void.pem` | RSA private key in PEM format |
 | Arch | `keys/arch.key` | OpenPGP private key export, ASCII armored or binary |
 | Chimera | `keys/chimera.rsa` | RSA unencrypted private key in PEM format |
+| Alpine | `keys/void.pem` | RSA unencrypted private key in PEM format |
 
 ### 3. Build packages
 Start the container:
@@ -207,3 +235,42 @@ Multiple targets from different distros can be built together:
 ```bash
 ./urepo build void/foo arch/bar
 ```
+
+## Building Alpine packages
+
+Use the universal builder image or an Alpine host with `sudo`, Bash, Git, OpenSSL, Bubblewrap, and `apk-tools`. Alpine builds need rootful Podman or Docker with `--privileged`.
+
+Recipes go in `alpine/{main,community,testing}/PACKAGE/APKBUILD`.
+
+| Directory | Use |
+| --- | --- |
+| `alpine/community` | Default for contributed packages built from stable releases |
+| `alpine/testing` | Git snapshots and other experimental or unreleased packages |
+| `alpine/main` | Patched or modified versions of packages already in official aports |
+
+These are URepo's categories. They do not indicate Alpine's upstream support tiers. All three repositories target edge.
+
+Keep patches and other recipe files beside `APKBUILD`. The backend refreshes official aports in `builddir/alpine/aports` and reapplies this overlay. Only overlay recipes are selected for builds.
+
+Inside the container:
+```bash
+./urepo build alpine/PACKAGE
+```
+
+The backend uses the host's `apk` to bootstrap Alpine edge in `builddir/alpine/root`, using official public keys in `alpine/etc/keys`. It installs the base without running scripts on the host, then reinstalls the base with scripts enabled inside Bubblewrap before installing the SDK. On Fedora, only the host bootstrap `apk` process uses `alpine/etc/openssl.cnf` to permit Alpine's RSA/SHA-1 signatures. This includes Fedora's system OpenSSL configuration and retains its TLS settings. Repository signatures are still verified against Alpine's keys; no system crypto policy is changed. No Alpine filesystem is embedded in the builder image. The backend runs `abuild rootbld` in this Alpine userspace. Named dependencies supplied by other overlay packages, including their subpackages, are built first. Official dependencies come from edge main, community, and testing. Builds preserve existing packages and create signed `APKINDEX.tar.gz` files in `builddir/alpine/packages/{main,community,testing}/x86_64`.
+
+`UREPO_ALPINE_SIGN_KEY` overrides the local key path. CI reuses `UREPO_KEY_RSA` through `SIGN_KEY`. `UREPO_ALPINE_APORTS_REF` can pin the official aports checkout to a commit. `UREPO_ALPINE_ARCH` selects the architecture; currently only native x86_64 is supported.
+
+The build workflow uploads packages and the public key before indexes to the existing SourceForge `alpine/` directory. It uses the same SourceForge credentials and base path as the other backends. PR builds keep the existing approval gate, generate temporary keys, and do not publish.
+
+Run regression tests with native `apk` and OpenSSL available:
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+Run the full build test as `builder` inside the universal image:
+```bash
+bash tests/smoke-alpine.sh
+```
+
+This creates temporary recipes, builds a dependency and a split package, checks signatures and indexes, and confirms missing subpackages are selected again. It does not publish packages or add recipes to this checkout.
