@@ -31,7 +31,7 @@ else
     [[ -f $root/.urepo-bootstrap ]] || { printf '%s\n' 'error: Alpine build root is not prepared' >&2; exit 1; }
 fi
 mkdir -p "$root"/{dev,proc,build/{aports,packages,sources,backend},home/builder/.abuild,tmp/urepo-signing}
-args=(--die-with-parent --bind "$root" / --dev-bind /dev /dev --proc /proc
+args=(--die-with-parent --bind "$root" / --dev-bind /dev /dev --bind /proc /proc
     --ro-bind /etc/resolv.conf /etc/resolv.conf
     --ro-bind "$backend" /build/backend
     --bind "$work/config" /home/builder/.abuild)
