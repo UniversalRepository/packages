@@ -1,7 +1,8 @@
 # aports Contributor: Alex Ungur <alexaandru@gmail.com>
 maintainer="Haris <plavpxl@proton.me>"
+maintainer="Tungnon <tungnon1222@gmail.com"
 pkgname=noctalia
-pkgver=5.4.0
+pkgver=5.4.1
 pkgrel=0
 _variant=elogind # Supported variants: basu, elogind
 pkgdesc="Lightweight Wayland shell built directly on Wayland and OpenGL ES"
