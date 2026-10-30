@@ -1,0 +1,29 @@
+diff --git a/ani-cli b/ani-cli
+index 77d7589..1dfcafd 100755
+--- a/ani-cli
++++ b/ani-cli
+@@ -108,22 +108,7 @@ version_info() {
+ # Bookkeeping
+ 
+ update_script() {
+-    info "[branch:$branch] Checking for Update.."
+-    update="$($curl_exe --fail-with-body -sL -A "$agent" "https://raw.githubusercontent.com/pystardust/ani-cli/$branch/ani-cli")" || die "[branch:$branch] Connection error: $update"
+-    new_version="$(printf "%s" "$update" | sed -nE 's|^version_number="([^"]+)"$|\1|p')"
+-    [ -z "$new_version" ] && die "[branch:$branch] Invalid response."
+-    printf "%s" "$update" | grep -q "^version_number" || die "[branch:$branch] Invalid response."
+-    update="$(printf "%s\n" "$update" | diff -u "$0" -)"
+-    if [ -z "$update" ]; then
+-        info "[branch:$branch] Script is up to date :) ($version_number)"
+-    else
+-        if printf "%s\n" "$update" | patch "$0" -; then
+-            info "[branch:$branch] Updated: $version_number -> $new_version"
+-        else
+-            die "[branch:$branch] Failed to update. Read the above line!"
+-        fi
+-    fi
+-    exit 0
++    die "Please check for updates using the system package manager (xbps-install -Su ani-cli)"
+ }
+ 
+ # checks if dependencies are present
+
