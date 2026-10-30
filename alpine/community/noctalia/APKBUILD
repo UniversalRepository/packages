@@ -1,7 +1,7 @@
 # aports Contributor: Alex Ungur <alexaandru@gmail.com>
 maintainer="Haris <plavpxl@proton.me>"
 pkgname=noctalia
-pkgver=5.4.0
+pkgver=5.4.1
 pkgrel=0
 _variant=elogind # Supported variants: basu, elogind
 pkgdesc="Lightweight Wayland shell built directly on Wayland and OpenGL ES"
@@ -77,5 +77,5 @@ package() {
 	install -Dm644 README.txt -t "$pkgdir"/usr/share/doc/"$pkgname"
 }
 sha512sums="
-8353c10f5ee73115f2c7b4a9faeebddfee646d665855886a83db75e6ba7ba554320104216c10efa646d61c1e3bac864f653e16407e8e78205ce03e615893599e  noctalia-5.4.0.tar.gz
+f21768677a6ffe46daec505f1f1e8c4f55d3a18875507eda62bd7070c957d1c26185bd1d05e22ea98023f2cec70776e73e9f48938cac185cbd69d9bc47edfa27  noctalia-5.4.1.tar.gz
 "
