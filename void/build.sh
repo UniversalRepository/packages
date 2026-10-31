@@ -100,17 +100,13 @@ void_shlibs() {
     awk '
         FILENAME == ARGV[1] {
             if (NF && $1 !~ /^#/) {
-                name = $1
-                sub(/\.so.*/, "", name)
-                replace[name] = 1
+                replace[$1] = 1
                 lines[++count] = $0
             }
             next
         }
         {
-            name = $1
-            sub(/\.so.*/, "", name)
-            if (!(name in replace)) print
+            if (!($1 in replace)) print
         }
         END { for (i = 1; i <= count; i++) print lines[i] }
     ' "$1" "$2"
