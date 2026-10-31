@@ -1,0 +1,2 @@
+site=https://github.com/AyuGram/AyuGramDesktop/releases/latest
+pattern='href="/AyuGram/AyuGramDesktop/releases/tag/v\K[\d\.]+(?=")'
