@@ -1,0 +1,29 @@
+# Template file for 'xlibre-xf86-video-amdgpu'
+pkgname=xlibre-xf86-video-amdgpu
+_pkgname=xf86-video-amdgpu
+version=25.0.3
+revision=2
+# build_style=meson
+build_style=gnu-configure
+configure_args="--prefix=/usr"
+hostmakedepends="pkg-config xorg-util-macros autoconf automake libtool git gawk"
+makedepends="xlibre-xserver-devel eudev-libudev-devel libpciaccess-devel libdrm-devel pixman-devel MesaLib-devel libXfont2-devel xorgproto fakeroot gawk gettext pkgconf mesa"
+depends="virtual?xserver-abi-video-25_1 mesa-dri"
+short_desc="XLibre fork of X.Org amdgpu video driver"
+maintainer="URepo <orphaned@universalrepo.pages.dev>"
+license="MIT"
+homepage="https://github.com/X11Libre/xf86-video-amdgpu"
+distfiles="https://github.com/X11Libre/${_pkgname}/archive/refs/tags/${pkgname}-${version}.tar.gz"
+checksum=7aee2340914cf84d2ce4ab86ed7866f7b2876090e7f63fe9f5d05e2fb158e805
+provides="xf86-video-amdgpu-${version}_${revision}"
+replaces="xf86-video-amdgpu>=0"
+
+LDFLAGS="-Wl,-z,lazy"
+
+pre_configure() {
+	./autogen.sh
+}
+
+post_install() {
+	vlicense COPYING
+}
