@@ -1,18 +1,19 @@
 # Template file for 'umbriel'
 pkgname=umbriel
-version=0.1.0.git20261102
+version=0.1.0.git20261104
 revision=1
 build_style=meson
 hostmakedepends="pkg-config wayland-scanner++"
 makedepends="wlroots0.20-devel wayland-devel libwaylandpp-devel wayland-protocols libxkbcommon-devel
 	libinput-devel eudev-libudev-devel pixman-devel libdrm-devel cairo-devel pango-devel
-	tomlplusplus-devel json-c++ libgbm-devel lcms2-devel jemalloc-devel libdisplay-info-devel libei-devel"
+	tomlplusplus-devel json-c++ libgbm-devel lcms2-devel jemalloc-devel libdisplay-info-devel libei-devel
+	libxcb-devel xcb-util-wm-devel"
 short_desc="Independent compositor with scrolling/dwindle/master/floating layouts"
 maintainer="Yoshi <yoshi@yoshiwalsh.me>"
 license="MIT"
 homepage="https://docs.noctalia.dev/umbriel/"
-distfiles="https://github.com/noctalia-dev/umbriel/archive/1968031d53a226c6f01b05b18fbff9b1d7179315.tar.gz"
-checksum="9f0fa4678993c2b118138c2a6bff54552ac3d02789f3ec438894ff4411de0e6f"
+distfiles="https://github.com/noctalia-dev/umbriel/archive/b6c4b7ddfb03e6bacf4fd0c76a13dca3a29f172f.tar.gz"
+checksum="1cfbf9388ff0837107316cbbeb6ec8c75fd2ca9ed94026c167d85cf2007758fd"
 
 post_install() {
 	vlicense LICENSE
