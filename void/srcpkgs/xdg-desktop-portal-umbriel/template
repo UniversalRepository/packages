@@ -1,6 +1,6 @@
 # Template file for 'xdg-desktop-portal-umbriel'
 pkgname=xdg-desktop-portal-umbriel
-version=0.1.0.git20261101
+version=0.1.0.git20261106
 revision=1
 build_style=meson
 hostmakedepends="pkg-config"
@@ -10,8 +10,8 @@ short_desc="XDG Desktop Portal for Umbriel"
 maintainer="Yoshi <yoshi@yoshiwalsh.me>"
 license="MIT"
 homepage="https://github.com/noctalia-dev/xdg-desktop-portal-umbriel"
-distfiles="https://github.com/noctalia-dev/xdg-desktop-portal-umbriel/archive/79f087598d596ae8a81dff1036d0ab3b5c446584.tar.gz"
-checksum="231286cffc2250dc02d9a56d5315999f485ae1dd153c72410be0476c0e20c161"
+distfiles="https://github.com/noctalia-dev/xdg-desktop-portal-umbriel/archive/56951426eb9931db3f1c57348f226c2427fba4f3.tar.gz"
+checksum="9b06e0b352499dce6a6ed3147998645a0d9959f959c7480da5b6bc0fc41256a8"
 
 post_install() {
 	vlicense LICENSE
