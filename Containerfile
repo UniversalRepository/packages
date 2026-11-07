@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:44
+FROM registry.fedoraproject.org/fedora:45
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 
