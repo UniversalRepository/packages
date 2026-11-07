@@ -1,6 +1,6 @@
 # Template file for 'nightcap'
 pkgname=nightcap
-version=0.5.0
+version=0.5.1
 revision=1
 build_style=cmake
 configure_args="-DCMAKE_INSTALL_LIBDIR=lib
