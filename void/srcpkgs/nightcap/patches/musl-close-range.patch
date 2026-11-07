@@ -1,0 +1,23 @@
+--- a/src/runtime/running_instance.cc
++++ b/src/runtime/running_instance.cc
+@@ -1,9 +1,11 @@
+ #include "runtime/running_instance.h"
+ 
+ #include <fcntl.h>
++#include <linux/close_range.h>
+ #include <signal.h>
+ #include <sys/stat.h>
+ #include <sys/sysmacros.h>
++#include <sys/syscall.h>
+ #include <sys/wait.h>
+ #include <unistd.h>
+ 
+@@ -327,7 +329,7 @@
+   sigset_t saved_mask;
+   sigemptyset(&none);
+   pthread_sigmask(SIG_SETMASK, &none, &saved_mask);
+-  (void)close_range(3, ~0U, CLOSE_RANGE_CLOEXEC);
++  (void)syscall(SYS_close_range, 3U, ~0U, CLOSE_RANGE_CLOEXEC);
+   EnterFolderIfItExists(command.working_directory.string());
+   execve(exec.path.c_str(), exec.arguments.data(), exec.envp);
+   const int exec_error = errno;
