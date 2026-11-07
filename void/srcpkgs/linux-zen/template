@@ -1,6 +1,6 @@
 # Template file for 'linux-zen'
 pkgname=linux-zen
-version=7.2.14
+version=7.2.15
 revision=1
 _tag="zen1"
 
@@ -15,7 +15,7 @@ maintainer="Haris <plavpxl@proton.me>"
 license="GPL-2.0-only"
 homepage="https://github.com/zen-kernel/zen-kernel"
 distfiles="${homepage}/archive/v${version}-${_tag}.tar.gz"
-checksum=eb917b4b960f04502e81348087da98e7d8334c9095dd7f658361549b78687440
+checksum=c483021274deb5f761fb98601f1463374498564ed7870f193d660d221bd3e721
 python_version=3
 
 nostrip=yes # handled in do_install()
