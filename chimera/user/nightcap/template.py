@@ -1,5 +1,5 @@
 pkgname = "nightcap"
-pkgver = "0.5.0"
+pkgver = "0.5.1"
 pkgrel = 0
 archs = ["x86_64"]
 build_style = "cmake"

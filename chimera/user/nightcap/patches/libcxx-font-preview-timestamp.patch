@@ -1,0 +1,18 @@
+--- a/src/ui/mocktail_settings.cc
++++ b/src/ui/mocktail_settings.cc
+@@ -167,3 +167,3 @@
+-  std::vector<std::string> font_previews;
++  std::vector<std::pair<std::string, std::filesystem::file_time_type>> font_previews;
+   bool font_shown = false;
+ };
+@@ -547,8 +547,6 @@
+   std::error_code error;
+   const auto stamp = std::filesystem::last_write_time(font, error);
+-  const std::string key =
+-      font.string() + '\n' +
+-      std::to_string(stamp.time_since_epoch().count());
+-  for (const std::string& loaded : window->font_previews) {
++  const auto key = std::make_pair(font.string(), stamp);
++  for (const auto& loaded : window->font_previews) {
+     if (loaded == key) return true;
+   }
