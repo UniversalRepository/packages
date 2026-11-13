@@ -4,6 +4,7 @@ version=5.5.0
 revision=1
 build_style=meson
 build_helper=qemu
+configure_args="-Db_ndebug=true"
 hostmakedepends="pkg-config wayland-devel"
 makedepends="basu-devel cairo-devel fontconfig-devel freetype-devel harfbuzz-devel
  jemalloc-devel json-c++ libcurl-devel libepoxy-devel libglvnd-devel libmd4c-devel
