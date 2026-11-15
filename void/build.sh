@@ -62,10 +62,10 @@ void_prepare() {
     info 'Preparing Void sources'
     void_checkout "$tree"
     void_overlay "$recipes/srcpkgs" "$tree/srcpkgs"
-    void_overlay "$recipes/common" "$tree/common" shlibs
-    if [ -f "$recipes/common/shlibs" ]; then
-        void_shlibs "$recipes/common/shlibs" "$tree/common/shlibs" > "$TMPDIR/shlibs"
-        mv "$TMPDIR/shlibs" "$tree/common/shlibs"
+    void_overlay "$recipes/common" "$tree/common" shlibs.diff
+    if [ -f "$recipes/common/shlibs.diff" ]; then
+        require patch
+        patch --batch --forward -d "$tree" -p1 < "$recipes/common/shlibs.diff"
     fi
     if [ -d "$recipes/etc" ]; then
         cp -RP "$recipes/etc/." "$tree/etc/"
@@ -94,22 +94,6 @@ void_overlay() {
         rm -rf "$2/$name"
         cp -RP "$item" "$2/$name"
     done
-}
-
-void_shlibs() {
-    awk '
-        FILENAME == ARGV[1] {
-            if (NF && $1 !~ /^#/) {
-                replace[$1] = 1
-                lines[++count] = $0
-            }
-            next
-        }
-        {
-            if (!($1 in replace)) print
-        }
-        END { for (i = 1; i <= count; i++) print lines[i] }
-    ' "$1" "$2"
 }
 
 void_sign() {
