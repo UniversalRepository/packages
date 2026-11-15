@@ -1,0 +1,14 @@
+--- a/src/voice/message_recorder.cpp
++++ b/src/voice/message_recorder.cpp
+@@ -285,7 +285,11 @@
+                                         : "The voice message could not be encoded."
+           );
+       }
++#if LIBAVFORMAT_VERSION_MAJOR < 61
++      static int write(void* opaque, std::uint8_t* bytes, int count) noexcept {
++#else
+       static int write(void* opaque, const std::uint8_t* bytes, int count) noexcept {
++#endif
+         auto& self = *static_cast<OggEncoder*>(opaque);
+         if (count < 0 || static_cast<std::size_t>(count) > messageMaximumBytes - self.m_bytes.size())
+           return AVERROR(ENOSPC);

@@ -1,0 +1,33 @@
+# Template file for 'cressida'
+pkgname=cressida
+version=0.3.0
+revision=1
+build_style=meson
+configure_args="-Dtests=disabled
+ -Demoji_font=/usr/share/fonts/noto-emoji/NotoColorEmoji.ttf"
+hostmakedepends="pkg-config python3 wayland-devel xdg-utils"
+makedepends="cairo-devel libcurl-devel ffmpeg6-devel fontconfig-devel
+ freetype-devel libglib-devel harfbuzz-devel libglvnd-devel libjxl-devel
+ pulseaudio-devel librsvg-devel libsecret-devel libsodium-devel libwebp-devel
+ libxkbcommon-devel libmd4c-devel mpv-devel json-c++ openssl-devel opus-devel
+ pango-devel pipewire-devel qrencode-devel rlottie-devel stb tomlplusplus-devel
+ wayland-devel wayland-protocols libzstd-devel"
+depends="ca-certificates noto-fonts-emoji hicolor-icon-theme shared-mime-info
+ xdg-utils"
+short_desc="Native Discord client for Wayland"
+maintainer="Haris <plavpxl@proton.me>"
+license="MIT, BSD-2-Clause"
+homepage="https://github.com/Ly-sec/Cressida"
+distfiles="${homepage}/archive/v${version}.tar.gz"
+checksum=a029f850f851083a2bfd70b8d9cd442692d2ef3fdfd317afdfa461e4381f669d
+# unsure if works in CI
+make_check=no
+
+cressida-devel_package() {
+	depends="${sourcepkg}>=${version}_${revision}"
+	short_desc+=" - development files"
+	pkg_install() {
+		# Unversioned shared libraries are needed by the client at runtime.
+		vmove usr/include
+	}
+}
