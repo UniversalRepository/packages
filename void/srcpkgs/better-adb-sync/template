@@ -1,0 +1,13 @@
+# Template file for 'better-adb-sync'
+pkgname=better-adb-sync
+version=1.4.0
+revision=1
+build_style=python3-pep517
+hostmakedepends="python3-setuptools python3-wheel"
+depends="python3 android-tools"
+short_desc="Rsync-like program for Android devices"
+maintainer="Haris <plavpxl@proton.me>"
+license="Apache-2.0"
+homepage="https://github.com/jb2170/better-adb-sync"
+distfiles="${homepage}/archive/refs/tags/v${version}.tar.gz"
+checksum=a28d494193076763f260828bb383aa1075860101cb20461ae855a2577be1d502
