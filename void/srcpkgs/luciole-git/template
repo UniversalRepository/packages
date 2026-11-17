@@ -9,6 +9,7 @@ makedepends="wayland-devel wayland-protocols MesaLib-devel libglvnd-devel
 	pango-devel harfbuzz-devel libxkbcommon-devel gdk-pixbuf-devel
 	glycin-devel librsvg-devel libpng-devel libarchive-devel
 	liblzma-devel acl-devel tomlplusplus-devel json-c++ stb"
+CXXFLAGS+=" -isystem /usr/include/librsvg-2.0"
 short_desc="Native Wayland file manager using Noctalia rendering and controls"
 maintainer="Rain Xelelo <rxelelo@outlook.com>"
 license="MIT"
