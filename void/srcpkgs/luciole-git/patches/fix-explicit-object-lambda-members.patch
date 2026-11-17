@@ -1,0 +1,15 @@
+--- a/src/browser/directory_model.cpp
++++ b/src/browser/directory_model.cpp
+@@ -389,10 +389,11 @@ void luciole::DirectoryModel::rebuildProjection() {
+     }
+     m_rows.clear();
+     std::unordered_set<EntryId> visited;
++    auto& rows = m_rows; // explicit-object lambdas have no implicit `this`
+     const auto append = [&](this auto&& self, EntryId id, std::size_t depth) -> void {
+       if (depth > 32 || !visited.insert(id).second) {
+         return;
+       }
+-      m_rows.push_back(id);
++      rows.push_back(id);
+       if (const auto found = children.find(id); found != children.end()) {
+         for (const auto child : found->second) {
