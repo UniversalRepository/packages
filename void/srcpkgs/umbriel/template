@@ -13,7 +13,7 @@ maintainer="Yoshi <yoshi@yoshiwalsh.me>"
 license="MIT"
 homepage="https://docs.noctalia.dev/umbriel/"
 distfiles="https://github.com/noctalia-dev/umbriel/archive/1bbbf155d25b2a338c7b6d52863d9f6efaf346ac.tar.gz"
-checksum="919f529512961a12e81cd4b4b466a48c3933469e7f9a310c6513cd4fb252ba3c"
+checksum="22e167ca7919fa6d6f9ec1afc1738860c4c370465f623853e90d7d7b59f9c866"
 
 post_install() {
 	vlicense LICENSE
