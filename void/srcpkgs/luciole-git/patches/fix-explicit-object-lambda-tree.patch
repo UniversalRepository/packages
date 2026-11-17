@@ -1,0 +1,37 @@
+--- a/src/browser/directory_tree.cpp
++++ b/src/browser/directory_tree.cpp
+@@ -186,11 +186,14 @@ void luciole::DirectoryTree::publish() {
+   std::vector<DirectoryEntries::Index> rows;
+   std::unordered_map<EntryId, EntryId> parents;
+   std::set<EntryId> retained;
++  // Explicit-object lambdas have no implicit `this`, so bind the members they use.
++  auto& nodes = m_nodes;
++  const auto& rootEntries = m_root.entries;
++  const bool foldersOnly = m_foldersOnly;
+   const auto append = [&](this auto&& self, const DirectoryEntry& entry, std::size_t depth) -> void {
+     if (depth >= maxDepth + 1) {
+       return;
+     }
+-    const auto found = m_nodes.find(entry.id);
+-    if (found == m_nodes.end()) {
++    const auto found = nodes.find(entry.id);
++    if (found == nodes.end()) {
+       return;
+     }
+     auto& node = *found->second;
+@@ -209,12 +212,12 @@ void luciole::DirectoryTree::publish() {
+     for (std::size_t i = 0; i < children.size(); ++i) {
+       const auto& child = children[i];
+       currentIds.emplace(child.name, Node::Identity{child.id, child.identity()});
+-      if (m_foldersOnly && child.type != FileType::Directory) {
++      if (foldersOnly && child.type != FileType::Directory) {
+         continue;
+       }
+       if (parents.empty()) {
+-        rows.reserve(m_root.entries.size() + children.size());
+-        for (std::size_t root = 0; root < m_root.entries.size(); ++root) {
++        rows.reserve(rootEntries.size() + children.size());
++        for (std::size_t root = 0; root < rootEntries.size(); ++root) {
+           rows.push_back({0, root});
+         }
+       }
