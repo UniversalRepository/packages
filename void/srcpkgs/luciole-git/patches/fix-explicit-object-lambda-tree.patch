@@ -1,6 +1,6 @@
 --- a/src/browser/directory_tree.cpp
 +++ b/src/browser/directory_tree.cpp
-@@ -186,12 +186,16 @@ void luciole::DirectoryTree::publish() {
+@@ -200,12 +200,16 @@ void luciole::DirectoryTree::publish() {
    std::vector<DirectoryEntries::Index> rows;
    std::unordered_map<EntryId, EntryId> parents;
    std::set<EntryId> retained;
@@ -19,12 +19,12 @@
        return;
      }
      auto& node = *found->second;
-@@ -209,11 +213,11 @@ void luciole::DirectoryTree::publish() {
+@@ -224,12 +228,12 @@ void luciole::DirectoryTree::publish() {
      for (std::size_t i = 0; i < children.size(); ++i) {
        const auto& child = children[i];
        currentIds.emplace(child.name, Node::Identity{child.id, child.identity()});
--      if (m_foldersOnly && child.type != FileType::Directory) {
-+      if (foldersOnly && child.type != FileType::Directory) {
+-      if (m_foldersOnly && !child.isFolderLink()) {
++      if (foldersOnly && !child.isFolderLink()) {
          continue;
        }
        if (parents.empty()) {
@@ -34,3 +34,4 @@
 +        for (std::size_t root = 0; root < rootEntries.size(); ++root) {
            rows.push_back({0, root});
          }
+       }
