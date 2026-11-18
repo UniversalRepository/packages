@@ -1,13 +1,13 @@
 # Template file for 'luciole-git'
 pkgname=luciole-git
 version=0.1.0.git20261118
-revision=1
+revision=2
 build_style=meson
 hostmakedepends="pkg-config"
 makedepends="wayland-devel wayland-protocols MesaLib-devel libglvnd-devel
 	glib-devel freetype-devel fontconfig-devel cairo-devel
 	pango-devel harfbuzz-devel libxkbcommon-devel gdk-pixbuf-devel
-	glycin-devel librsvg-devel libpng-devel libarchive-devel
+	librsvg-devel libpng-devel libarchive-devel
 	liblzma-devel acl-devel tomlplusplus-devel json-c++ stb
 	libxml2-devel libcurl-devel"
 CXXFLAGS+=" -isystem /usr/include/librsvg-2.0"
@@ -15,8 +15,8 @@ short_desc="Native Wayland file manager using Noctalia rendering and controls"
 maintainer="Rain Xelelo <rxelelo@outlook.com>"
 license="MIT"
 homepage="https://github.com/noctalia-dev/luciole"
-distfiles="$homepage/archive/83856751534bd13d06632f37b95892b20928deec.tar.gz"
-checksum="ae9490157f9bbd78291352e58c0d7a85742fb61651f7ea8bc5a5224db4fec5e3"
+distfiles="$homepage/archive/90689cc89d05853871036b1772b71e441bd72f69.tar.gz"
+checksum="c41b3980c5d2a3f34c57c0a8464a7ac9575f8467d75e9ffa4cc9d891fbb65532"
 
 post_install() {
 	vlicense LICENSE
