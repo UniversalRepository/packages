@@ -1,6 +1,6 @@
 # Template file for 'umbriel'
 pkgname=umbriel
-version=0.1.0.git20261122
+version=0.1.0.git20261124
 revision=1
 build_style=meson
 hostmakedepends="pkg-config wayland-scanner++"
@@ -12,8 +12,8 @@ short_desc="Independent compositor with scrolling/dwindle/master/floating layout
 maintainer="Yoshi <yoshi@yoshiwalsh.me>"
 license="MIT"
 homepage="https://docs.noctalia.dev/umbriel/"
-distfiles="https://github.com/noctalia-dev/umbriel/archive/a3701bb20e10c1794741e0efeadda21fbb84f23d.tar.gz"
-checksum="ae1644098826035baf2e2cf8c4760545b8689a8a319cac68a1cee0a3cf70fbdf"
+distfiles="https://github.com/noctalia-dev/umbriel/archive/b56b66ce66b4cf84d34e522d3ad63a82b215ccd9.tar.gz"
+checksum="d434277960ffdfce32ff76fb20ba8f249b96f15218eac72e86570469d6e82848"
 
 post_install() {
 	vlicense LICENSE
